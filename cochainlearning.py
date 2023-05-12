@@ -139,7 +139,7 @@ def gen_CDM(vf,chain, d = 5):
     vf : a Pytorch Sequential object
         The vector field to be applied to the chain
     
-    \chain : a torch tensor of shape (r,2,n)
+    chain : a torch tensor of shape (r,2,n)
         The chain to be turned into a cochain data matrix
 
     d : int
