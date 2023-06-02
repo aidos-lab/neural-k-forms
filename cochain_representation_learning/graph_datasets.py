@@ -10,6 +10,9 @@ import pytorch_lightning as pl
 
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
+from cochain_representation_learning import DATA_ROOT
+
+from torch_geometric.data import Data
 from torch_geometric.data import DataLoader
 from torch_geometric.datasets import TUDataset
 
@@ -58,7 +61,11 @@ def _graph_to_chain(graph):
         ch[i, 0, :] = node_features[edges[i][0]]
         ch[i, 1, :] = node_features[edges[i][1]]
 
-    return ch
+    # TODO (BR): is this the smartest type of transformation here?
+    # Should we rather try to copy everything?
+    return Data(
+        x=graph["x"], y=graph["y"], edge_index=graph["edge_index"], chains=ch
+    )
 
 
 def describe(dataset):
@@ -109,7 +116,8 @@ class TUGraphDataset(pl.LightningDataModule):
         # TODO (BR): We can use this to check whether the data set
         # actually has some node attributes. If not, we can assign
         # some based on the degrees, for instance.
-        self.pre_transform = None
+        self.transform = None
+        self.pre_transform = _graph_to_chain
 
         self.n_splits = n_splits
         self.fold = fold
