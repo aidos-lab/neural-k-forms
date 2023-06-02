@@ -11,13 +11,13 @@ import numpy as np
 
 import pytorch_lightning as pl
 
+import argparse
+import os
+
 from cochain_representation_learning.graph_datasets import TUGraphDataset
 
 from cochain_representation_learning import DATA_ROOT
 from cochain_representation_learning import generate_cochain_data_matrix
-
-import argparse
-import os
 
 
 class SimpleModel(pl.LightningModule):
@@ -82,15 +82,22 @@ class SimpleModel(pl.LightningModule):
         return sm
 
     def training_step(self, batch, batch_idx):
-        chains, label = batch["chains"], batch["y"]
-        out = self(chains)
+        all_chains, label = batch["chains"], batch["y"]
 
-        # do a 1-hot encoding of data.y
-        # TODO (BR): this can be solved in the dataset class as well
-        y = torch.zeros(self.out)
-        y[label] = 1
+        edge_slices = batch._slice_dict["edge_index"]
+        batch_size = len(edge_slices) - 1
 
-        loss = self.loss_fn(out, y)
+        loss = 0.0
+
+        for i in range(batch_size):
+            chains = all_chains[edge_slices[i]:edge_slices[i + 1], :]
+
+            y_pred = self(chains)
+            y_pred = y_pred.view(-1, y_pred.shape[-1])
+
+            loss += self.loss_fn(y_pred, label.view(-1))
+
+        loss /= batch_size
 
         self.log("train_loss", loss, on_step=True, on_epoch=True)
         return loss
@@ -111,7 +118,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    dataset = TUGraphDataset(name=args.name, batch_size=args.batch_size)
+    dataset = TUGraphDataset(
+        name=args.name, batch_size=args.batch_size, seed=args.seed
+    )
     dataset.prepare_data()
 
     trainer = pl.Trainer(
