@@ -31,17 +31,18 @@ def _get_labels(dataset):
     return labels
 
 
+class ChainData(Data):
+    def __cat_dim__(self, key, value, *args, **kwargs):
+        if key == "chains":
+            return None
+        return super().__cat_dim__(key, value, *args, **kwargs)
+
+
 class ConvertGraphToChains(BaseTransform):
-    def __call__(self, graph):
+    def __call__(self, data):
         """Convert graph into chains."""
-
-        # get node features
-        # TODO (BR): do we need to copy this?
-        node_features = torch.tensor(graph["x"])
-
-        # get edges
-        # TODO (BR): do we need to copy this?
-        edge_index = torch.tensor(graph["edge_index"]).T
+        node_features = data["x"]
+        edge_index = data["edge_index"].T
 
         # number of 1-simplices
         r = edge_index.shape[0]
@@ -57,22 +58,19 @@ class ConvertGraphToChains(BaseTransform):
             ]
         )
 
-        # initialize chain
-        ch = torch.zeros((r, 2, n))
+        # initialize chains
+        chains = torch.zeros((r, 2, n))
 
         # turn edges into a 1-chain
         for i in range(r):
-            ch[i, 0, :] = node_features[edges[i][0]]
-            ch[i, 1, :] = node_features[edges[i][1]]
+            chains[i, 0, :] = node_features[edges[i][0]]
+            chains[i, 1, :] = node_features[edges[i][1]]
 
-        # TODO (BR): is this the smartest type of transformation here?
-        # Should we rather try to copy everything?
-        return Data(
-            x=graph["x"],
-            y=graph["y"],
-            edge_index=graph["edge_index"],
-            chains=ch,
-        )
+        data["chains"] = chains
+
+        print("CHAINS", ChainData().update(data))
+
+        return ChainData().update(data)
 
 
 def describe(dataset):
@@ -124,7 +122,7 @@ class TUGraphDataset(pl.LightningDataModule):
         # actually has some node attributes. If not, we can assign
         # some based on the degrees, for instance.
         self.transform = ConvertGraphToChains()
-        self.pre_transform = None 
+        self.pre_transform = None
 
         self.n_splits = n_splits
         self.fold = fold
