@@ -13,8 +13,6 @@ from torch_geometric.datasets import TUDataset
 
 from torch.utils.data import Subset
 
-from cochain_representation_learning import DATA_ROOT
-
 
 def _get_labels(dataset):
     labels = []
@@ -50,7 +48,6 @@ def describe(dataset):
     print(f"Is undirected: {data.is_undirected()}")
 
 
-
 class TUGraphDataset(pl.LightningDataModule):
     def __init__(
         self,
@@ -62,7 +59,7 @@ class TUGraphDataset(pl.LightningDataModule):
         seed=42,
         n_splits=5,
         legacy=True,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.name = name
@@ -80,7 +77,6 @@ class TUGraphDataset(pl.LightningDataModule):
         self.fold = fold
 
     def prepare_data(self):
-
         # TODO (BR): Do we want to have cleaned versions of these data
         # sets that include only non-isomorphic graphs?
         cleaned = False
@@ -94,6 +90,8 @@ class TUGraphDataset(pl.LightningDataModule):
             transform=self.transform,
             pre_transform=self.pre_transform,
         )
+
+        describe(dataset)
 
         self.num_classes = dataset.num_classes
 
