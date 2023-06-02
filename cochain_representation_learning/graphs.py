@@ -101,62 +101,6 @@ class SimpleModel(pl.LightningModule):
         return optimizer
 
 
-## print the total number of graphs in each class in the dataset
-# print("Number of graphs in each class in the dataset:")
-# print("=============================================================")
-# for i in range(train_dataset.num_classes):
-#    print(f"Class {i}: {sum([1 for data in train_dataset if data.y == i])}")
-#
-## store the ratio of graphs in each class
-# class_ratios = torch.tensor(
-#    [
-#        sum([1 for data in train_dataset if data.y == i]) / len(train_dataset)
-#        for i in range(train_dataset.num_classes)
-#    ]
-# )
-#
-# weight_ratios = 1 - class_ratios
-#
-#
-## create your optimizer
-# optimizer = optim.SGD(basic_model.parameters(), lr=1e-1)
-#
-# criterion = torch.nn.CrossEntropyLoss(weight=weight_ratios)
-
-
-def train(dataset, chainz):
-    basic_model.train()
-
-    correct = 0
-    L = 0
-
-    for i in range(
-        len(dataset)
-    ):  # Iterate in batches over the training dataset.
-        chain = chainz[i]
-        data = dataset[i]
-
-        out = basic_model.forward(chain)  # Perform a single forward pass.
-
-        # do a 1-hot encoding of data.y
-        y = torch.zeros(dataset.num_classes)
-        y[data.y] = 1
-
-        # compute if prediction is correct
-        if torch.argmax(out) == torch.argmax(y):
-            correct += 1
-
-        loss = criterion(out, y)  # Compute the loss.
-        loss.backward()  # Derive gradients.
-
-        L += loss.item()
-
-        optimizer.step()  # Update parameters based on gradients.
-        optimizer.zero_grad()  # Clear gradients.
-
-    return L / len(dataset), correct / len(dataset)
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-epochs", type=int, default=10)
