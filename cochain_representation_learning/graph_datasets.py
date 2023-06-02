@@ -14,7 +14,10 @@ from cochain_representation_learning import DATA_ROOT
 
 from torch_geometric.data import Data
 from torch_geometric.data import DataLoader
+
 from torch_geometric.datasets import TUDataset
+
+from torch_geometric.transforms import BaseTransform
 
 from torch.utils.data import Subset
 
@@ -28,44 +31,48 @@ def _get_labels(dataset):
     return labels
 
 
-def _graph_to_chain(graph):
-    """Convert graph into chains."""
+class ConvertGraphToChains(BaseTransform):
+    def __call__(self, graph):
+        """Convert graph into chains."""
 
-    # get node features
-    # TODO (BR): do we need to copy this?
-    node_features = torch.tensor(graph["x"])
+        # get node features
+        # TODO (BR): do we need to copy this?
+        node_features = torch.tensor(graph["x"])
 
-    # get edges
-    # TODO (BR): do we need to copy this?
-    edge_index = torch.tensor(graph["edge_index"]).T
+        # get edges
+        # TODO (BR): do we need to copy this?
+        edge_index = torch.tensor(graph["edge_index"]).T
 
-    # number of 1-simplices
-    r = edge_index.shape[0]
+        # number of 1-simplices
+        r = edge_index.shape[0]
 
-    # embedding dimension
-    n = node_features.shape[1]
+        # embedding dimension
+        n = node_features.shape[1]
 
-    # sort the edge indices
-    edges = torch.tensor(
-        [
-            np.sort([edge_index[i][0], edge_index[i][1]])
-            for i in range(len(edge_index))
-        ]
-    )
+        # sort the edge indices
+        edges = torch.tensor(
+            [
+                np.sort([edge_index[i][0], edge_index[i][1]])
+                for i in range(len(edge_index))
+            ]
+        )
 
-    # initialize chain
-    ch = torch.zeros((r, 2, n))
+        # initialize chain
+        ch = torch.zeros((r, 2, n))
 
-    # turn edges into a 1-chain
-    for i in range(r):
-        ch[i, 0, :] = node_features[edges[i][0]]
-        ch[i, 1, :] = node_features[edges[i][1]]
+        # turn edges into a 1-chain
+        for i in range(r):
+            ch[i, 0, :] = node_features[edges[i][0]]
+            ch[i, 1, :] = node_features[edges[i][1]]
 
-    # TODO (BR): is this the smartest type of transformation here?
-    # Should we rather try to copy everything?
-    return Data(
-        x=graph["x"], y=graph["y"], edge_index=graph["edge_index"], chains=ch
-    )
+        # TODO (BR): is this the smartest type of transformation here?
+        # Should we rather try to copy everything?
+        return Data(
+            x=graph["x"],
+            y=graph["y"],
+            edge_index=graph["edge_index"],
+            chains=ch,
+        )
 
 
 def describe(dataset):
@@ -116,8 +123,8 @@ class TUGraphDataset(pl.LightningDataModule):
         # TODO (BR): We can use this to check whether the data set
         # actually has some node attributes. If not, we can assign
         # some based on the degrees, for instance.
-        self.transform = None
-        self.pre_transform = _graph_to_chain
+        self.transform = ConvertGraphToChains()
+        self.pre_transform = None 
 
         self.n_splits = n_splits
         self.fold = fold
@@ -140,6 +147,7 @@ class TUGraphDataset(pl.LightningDataModule):
         describe(dataset)
 
         self.num_classes = dataset.num_classes
+        self.num_features = dataset.num_features
 
         n_instances = len(dataset)
 
