@@ -139,6 +139,11 @@ class model(nn.Module):
         X = generate_cochain_data_matrix(self.vf, x)
 
         # orientation invariant square L2-norm readout function
+        # TODO (BR): this is something we might want to change, no? If
+        # I understand the code correctly, we are getting information
+        # for all edges. I wonder whether it would make sense to think
+        # about some other readout functions here (potentially using
+        # attention weights).
         X = torch.diag(X.T @ X)
 
         # put output through classifier
