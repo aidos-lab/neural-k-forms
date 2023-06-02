@@ -1,0 +1,12 @@
+[tool.poetry]
+name = "cochain_representation_learning"
+description = "Representation learning using cochains"
+version = "0.1.0"
+authors = [
+  "Kelly Maggs <kelly.maggs@epf.ch>",
+  "Celia Hacker <celia.hacker@mis.mpg.de>",
+  "Bastian Rieck <bastian.rieck@helmholtz-munich.de>"
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<=3.11"
