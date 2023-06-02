@@ -12,7 +12,6 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 
 from cochain_representation_learning import DATA_ROOT
 
-from torch_geometric.data import Data
 from torch_geometric.data import DataLoader
 
 from torch_geometric.datasets import TUDataset
@@ -29,13 +28,6 @@ def _get_labels(dataset):
         labels.append(dataset[i].y)
 
     return labels
-
-
-class ChainData(Data):
-    def __cat_dim__(self, key, value, *args, **kwargs):
-        if key == "chains":
-            return None
-        return super().__cat_dim__(key, value, *args, **kwargs)
 
 
 class ConvertGraphToChains(BaseTransform):
@@ -67,10 +59,7 @@ class ConvertGraphToChains(BaseTransform):
             chains[i, 1, :] = node_features[edges[i][1]]
 
         data["chains"] = chains
-
-        print("CHAINS", ChainData().update(data))
-
-        return ChainData().update(data)
+        return data
 
 
 def describe(dataset):
@@ -122,7 +111,7 @@ class TUGraphDataset(pl.LightningDataModule):
         # actually has some node attributes. If not, we can assign
         # some based on the degrees, for instance.
         self.transform = ConvertGraphToChains()
-        self.pre_transform = None
+        self.pre_transform = None 
 
         self.n_splits = n_splits
         self.fold = fold
