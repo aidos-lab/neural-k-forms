@@ -19,3 +19,5 @@ torch = "^2.0.1"
 [tool.poetry.group.dev.dependencies]
 notebook = "^6.5.4"
 
+[tool.black]
+line-length = 79
