@@ -83,7 +83,6 @@ class SimpleModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         chains, label = batch["chains"], batch["y"]
-
         out = self(chains)
 
         # do a 1-hot encoding of data.y
@@ -92,6 +91,8 @@ class SimpleModel(pl.LightningModule):
         y[label] = 1
 
         loss = self.loss_fn(out, y)
+
+        self.log("train_loss", loss, on_step=True, on_epoch=True)
         return loss
 
     def configure_optimizers(self):
@@ -161,8 +162,8 @@ if __name__ == "__main__":
     parser.add_argument("--max-epochs", type=int, default=10)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--name", type=str, default="AIDS")
+    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--name", type=str, default="MUTAG")
 
     args = parser.parse_args()
 
