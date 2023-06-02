@@ -4,6 +4,8 @@ import itertools
 import os
 import torch
 
+import numpy as np
+
 import pytorch_lightning as pl
 
 from sklearn.model_selection import StratifiedKFold, train_test_split
@@ -21,6 +23,42 @@ def _get_labels(dataset):
         labels.append(dataset[i].y)
 
     return labels
+
+
+def _graph_to_chain(graph):
+    """Convert graph into chains."""
+
+    # get node features
+    # TODO (BR): do we need to copy this?
+    node_features = torch.tensor(graph["x"])
+
+    # get edges
+    # TODO (BR): do we need to copy this?
+    edge_index = torch.tensor(graph["edge_index"]).T
+
+    # number of 1-simplices
+    r = edge_index.shape[0]
+
+    # embedding dimension
+    n = node_features.shape[1]
+
+    # sort the edge indices
+    edges = torch.tensor(
+        [
+            np.sort([edge_index[i][0], edge_index[i][1]])
+            for i in range(len(edge_index))
+        ]
+    )
+
+    # initialize chain
+    ch = torch.zeros((r, 2, n))
+
+    # turn edges into a 1-chain
+    for i in range(r):
+        ch[i, 0, :] = node_features[edges[i][0]]
+        ch[i, 1, :] = node_features[edges[i][1]]
+
+    return ch
 
 
 def describe(dataset):
