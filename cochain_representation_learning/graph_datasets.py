@@ -111,7 +111,7 @@ class TUGraphDataset(pl.LightningDataModule):
         # actually has some node attributes. If not, we can assign
         # some based on the degrees, for instance.
         self.transform = ConvertGraphToChains()
-        self.pre_transform = None 
+        self.pre_transform = None
 
         self.n_splits = n_splits
         self.fold = fold
@@ -130,8 +130,6 @@ class TUGraphDataset(pl.LightningDataModule):
             transform=self.transform,
             pre_transform=self.pre_transform,
         )
-
-        describe(dataset)
 
         self.num_classes = dataset.num_classes
         self.num_features = dataset.num_features
