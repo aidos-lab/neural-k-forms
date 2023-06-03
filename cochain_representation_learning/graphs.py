@@ -1,24 +1,15 @@
+"""Cochain learning on graph data sets."""
+
+import argparse
+
 import torch
 import torch.nn as nn
-import torch.optim as optim
-import torch_geometric
-from torch_geometric.datasets import TUDataset
-import networkx as nx
-import numpy as np
-import gudhi as gd
-import matplotlib.pyplot as plt
-import numpy as np
 
 import pytorch_lightning as pl
 import torchmetrics as tm
 
-import argparse
-import os
-
-from cochain_representation_learning.graph_datasets import TUGraphDataset
-
-from cochain_representation_learning import DATA_ROOT
 from cochain_representation_learning import generate_cochain_data_matrix
+from cochain_representation_learning.graph_datasets import TUGraphDataset
 
 
 class SimpleModel(pl.LightningModule):
@@ -57,7 +48,7 @@ class SimpleModel(pl.LightningModule):
         )
 
         # TODO (BR): incorporate ratios of classes again
-        self.loss_fn = torch.nn.CrossEntropyLoss()
+        self.loss_fn = nn.CrossEntropyLoss()
 
     # TODO (BR): document
     def forward(self, x):
