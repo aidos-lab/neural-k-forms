@@ -76,13 +76,10 @@ class SimpleModel(pl.LightningModule):
         # attention weights).
         X = torch.diag(X.T @ X)
 
-        # put output through classifier
-        output = self.classifier(X)
+        pred = self.classifier(X)
+        pred = nn.functional.softmax(pred, -1)
 
-        # softmax
-        sm = nn.functional.softmax(output)
-
-        return sm
+        return pred
 
     def training_step(self, batch, batch_idx):
         x, y = batch["chains"], batch["y"]
