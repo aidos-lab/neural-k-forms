@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import pytorch_lightning as pl
+import torchmetrics as tm
 
 import argparse
 import os
@@ -34,6 +35,8 @@ class SimpleModel(pl.LightningModule):
         self.m1 = m1
         self.m2 = m2
         self.m3 = m3
+
+        self.accuracy = tm.Accuracy(task="binary")
 
         # initialise vector field
         self.vf = nn.Sequential(
@@ -82,24 +85,32 @@ class SimpleModel(pl.LightningModule):
         return sm
 
     def training_step(self, batch, batch_idx):
-        all_chains, label = batch["chains"], batch["y"]
+        x, y = batch["chains"], batch["y"]
 
         edge_slices = batch._slice_dict["edge_index"]
         batch_size = len(edge_slices) - 1
 
         loss = 0.0
 
+        y_hat = []
+
         for i in range(batch_size):
-            chains = all_chains[edge_slices[i]:edge_slices[i + 1], :]
+            chains = x[edge_slices[i]:edge_slices[i + 1], :]
 
             y_pred = self(chains)
             y_pred = y_pred.view(-1, y_pred.shape[-1])
 
-            loss += self.loss_fn(y_pred, label.view(-1))
+            y_hat.append(y_pred)
+
+            loss += self.loss_fn(y_pred, y[i].view(-1))
+
+        y_hat = torch.cat(y_hat)
+        self.accuracy(torch.argmax(y_hat, -1).view(-1), y)
 
         loss /= batch_size
 
         self.log("train_loss", loss, on_step=True, on_epoch=True)
+        self.log("train_accuracy", self.accuracy, on_step=True, on_epoch=True)
         return loss
 
     def configure_optimizers(self):
@@ -113,7 +124,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-epochs", type=int, default=10)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--name", type=str, default="MUTAG")
 
     args = parser.parse_args()
