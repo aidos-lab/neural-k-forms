@@ -116,17 +116,16 @@ class SimpleModel(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        # TODO (BR): default parameters?
-        optimizer = torch.optim.Adam(self.parameters())
+        optimizer = torch.optim.SGD(self.parameters(), lr=1e-2)
         return optimizer
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--max-epochs", type=int, default=10)
+    parser.add_argument("--max-epochs", type=int, default=50)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--name", type=str, default="MUTAG")
 
     args = parser.parse_args()
