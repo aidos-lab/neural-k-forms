@@ -95,7 +95,7 @@ class SimpleModel(pl.LightningModule):
         y_hat = []
 
         for i in range(batch_size):
-            chains = x[edge_slices[i]:edge_slices[i + 1], :]
+            chains = x[edge_slices[i] : edge_slices[i + 1], :]
 
             y_pred = self(chains)
             y_pred = y_pred.view(-1, y_pred.shape[-1])
@@ -109,8 +109,22 @@ class SimpleModel(pl.LightningModule):
 
         loss /= batch_size
 
-        self.log("train_loss", loss, on_step=True, on_epoch=True)
-        self.log("train_accuracy", self.accuracy, on_step=True, on_epoch=True)
+        self.log(
+            "train_loss",
+            loss,
+            on_step=True,
+            on_epoch=True,
+            batch_size=batch_size,
+        )
+
+        self.log(
+            "train_accuracy",
+            self.accuracy,
+            on_step=True,
+            on_epoch=True,
+            batch_size=batch_size,
+        )
+
         return loss
 
     def configure_optimizers(self):
@@ -134,11 +148,13 @@ if __name__ == "__main__":
     )
     dataset.prepare_data()
 
-    trainer = pl.Trainer(
-        max_epochs=args.max_epochs,
+    wandb_logger = pl.loggers.WandbLogger(
+        name=args.name,
+        project="cochain-representation-learning",
+        log_model=False,
     )
 
-    print(dataset.num_features, dataset.num_classes)
+    trainer = pl.Trainer(max_epochs=args.max_epochs, logger=wandb_logger)
 
     model = SimpleModel(n=dataset.num_features, out=dataset.num_classes)
     trainer.fit(model, dataset)
