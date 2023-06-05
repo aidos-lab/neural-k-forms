@@ -124,8 +124,6 @@ class TUGraphDataset(pl.LightningDataModule):
         dataset = TUDataset(
             root=os.path.join(DATA_ROOT, "TU"),
             name=self.name,
-            # TODO (BR): Can we use these attributes somehow?
-            use_node_attr=False,
             cleaned=cleaned,
             transform=self.transform,
             pre_transform=self.pre_transform,
