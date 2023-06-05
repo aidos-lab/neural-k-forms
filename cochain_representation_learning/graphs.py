@@ -1,4 +1,8 @@
-"""Cochain learning on graph data sets."""
+"""Cochain learning on graph data sets.
+
+This is the main script for cochain representation learning on graphs.
+It is compatible with the `TUDataset` class from `pytorch-geometric`.
+"""
 
 import argparse
 
@@ -12,8 +16,8 @@ from cochain_representation_learning import generate_cochain_data_matrix
 from cochain_representation_learning.graph_datasets import TUGraphDataset
 
 
-class SimpleModel(pl.LightningModule):
-    """Simple model using conv layers and linear layers."""
+class SimpleModel(nn.Module):
+    """Simple model using linear layers."""
 
     # TODO (BR): need to discuss the relevance of the respective channel
     # sizes; maybe we should also permit deeper MLPs?
@@ -26,7 +30,6 @@ class SimpleModel(pl.LightningModule):
         m2=10,
         m3=20,
         m4=10,
-        class_ratios=None,
     ):
         super().__init__()
 
@@ -55,18 +58,6 @@ class SimpleModel(pl.LightningModule):
             nn.Linear(m4, num_classes),
         )
 
-        self.loss_fn = nn.CrossEntropyLoss(weight=class_ratios)
-
-        self.train_accuracy = tm.Accuracy(
-            task="multiclass", num_classes=num_classes
-        )
-        self.validation_accuracy = tm.Accuracy(
-            task="multiclass", num_classes=num_classes
-        )
-        self.test_accuracy = tm.Accuracy(
-            task="multiclass", num_classes=num_classes
-        )
-
     # TODO (BR): document
     def forward(self, x):
         # asses the dimensions are correct somewhere
@@ -89,6 +80,31 @@ class SimpleModel(pl.LightningModule):
 
         return pred
 
+
+class CochainModelWrapper(pl.LightningModule):
+    """Wrapper class for cochain representation learning on graphs.
+
+    The purpose of this wrapper is to permit learning representations
+    with various internal models, which we refer to as backbones. The
+    wrapper provides a consistent training procedure.
+    """
+
+    def __init__(self, backbone, num_classes, class_ratios=None):
+        super().__init__()
+
+        self.backbone = backbone
+        self.loss_fn = nn.CrossEntropyLoss(weight=class_ratios)
+
+        self.train_accuracy = tm.Accuracy(
+            task="multiclass", num_classes=num_classes
+        )
+        self.validation_accuracy = tm.Accuracy(
+            task="multiclass", num_classes=num_classes
+        )
+        self.test_accuracy = tm.Accuracy(
+            task="multiclass", num_classes=num_classes
+        )
+
     def step(self, batch, batch_idx, prefix, accuracy):
         x, y = batch["chains"], batch["y"]
 
@@ -102,7 +118,7 @@ class SimpleModel(pl.LightningModule):
         for i in range(batch_size):
             chains = x[edge_slices[i]:edge_slices[i + 1], :]  # fmt: skip
 
-            y_pred = self(chains)
+            y_pred = self.backbone(chains)
             y_pred = y_pred.view(-1, y_pred.shape[-1])
 
             y_hat.append(y_pred)
@@ -143,7 +159,7 @@ class SimpleModel(pl.LightningModule):
         return self.step(batch, batch_idx, "test", self.test_accuracy)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.backbone.parameters(), lr=1e-3)
         return optimizer
 
 
@@ -170,10 +186,12 @@ if __name__ == "__main__":
 
     trainer = pl.Trainer(max_epochs=args.max_epochs, logger=wandb_logger)
 
-    model = SimpleModel(
+    backbone = SimpleModel(
         n=dataset.num_features,
         num_classes=dataset.num_classes,
-        class_ratios=dataset.class_ratios,
     )
 
+    model = CochainModelWrapper(
+        backbone, dataset.num_classes, dataset.class_ratios
+    )
     trainer.fit(model, dataset)
