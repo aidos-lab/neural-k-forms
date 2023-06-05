@@ -28,8 +28,7 @@ class SimpleModel(nn.Module):
         c=5,
         m1=20,
         m2=10,
-        m3=20,
-        m4=10,
+        hidden_dim=64
     ):
         super().__init__()
 
@@ -38,10 +37,8 @@ class SimpleModel(nn.Module):
         self.c = c
         self.m1 = m1
         self.m2 = m2
-        self.m3 = m3
 
-        # initialise vector field
-        self.vf = nn.Sequential(
+        self.vector_field = nn.Sequential(
             nn.Linear(n, m1),
             nn.ReLU(),
             nn.Linear(m1, m2),
@@ -49,13 +46,12 @@ class SimpleModel(nn.Module):
             nn.Linear(m2, n * c),
         )
 
-        # initialise MLP classifier
         self.classifier = nn.Sequential(
-            nn.Linear(c, m3),
+            nn.Linear(c, hidden_dim),
             nn.ReLU(),
-            nn.Linear(m3, m4),
+            nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
-            nn.Linear(m4, num_classes),
+            nn.Linear(hidden_dim // 2, num_classes),
         )
 
     # TODO (BR): document
@@ -64,8 +60,7 @@ class SimpleModel(nn.Module):
         # Here the input is a chain, and the output is a vector of
         # probabilities
 
-        # generate cochain data matrix
-        X = generate_cochain_data_matrix(self.vf, x)
+        X = generate_cochain_data_matrix(self.vector_field, x)
 
         # orientation invariant square L2-norm readout function
         # TODO (BR): this is something we might want to change, no? If
