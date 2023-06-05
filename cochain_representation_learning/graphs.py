@@ -18,18 +18,24 @@ class SimpleModel(pl.LightningModule):
     # TODO (BR): need to discuss the relevance of the respective channel
     # sizes; maybe we should also permit deeper MLPs?
     def __init__(
-        self, n, out, c=5, m1=20, m2=10, m3=20, m4=10, class_ratios=None
+        self,
+        n,
+        num_classes,
+        c=5,
+        m1=20,
+        m2=10,
+        m3=20,
+        m4=10,
+        class_ratios=None,
     ):
         super().__init__()
 
         self.n = n
-        self.out = out  # TODO (BR): find a nicer variable name
+        self.num_classes = num_classes
         self.c = c
         self.m1 = m1
         self.m2 = m2
         self.m3 = m3
-
-        self.accuracy = tm.Accuracy(task="binary")
 
         # initialise vector field
         self.vf = nn.Sequential(
@@ -46,10 +52,20 @@ class SimpleModel(pl.LightningModule):
             nn.ReLU(),
             nn.Linear(m3, m4),
             nn.ReLU(),
-            nn.Linear(m4, out),
+            nn.Linear(m4, num_classes),
         )
 
         self.loss_fn = nn.CrossEntropyLoss(weight=class_ratios)
+
+        self.train_accuracy = tm.Accuracy(
+            task="multiclass", num_classes=num_classes
+        )
+        self.validation_accuracy = tm.Accuracy(
+            task="multiclass", num_classes=num_classes
+        )
+        self.test_accuracy = tm.Accuracy(
+            task="multiclass", num_classes=num_classes
+        )
 
     # TODO (BR): document
     def forward(self, x):
@@ -73,7 +89,7 @@ class SimpleModel(pl.LightningModule):
 
         return pred
 
-    def training_step(self, batch, batch_idx):
+    def step(self, batch, batch_idx, prefix, accuracy):
         x, y = batch["chains"], batch["y"]
 
         edge_slices = batch._slice_dict["edge_index"]
@@ -96,10 +112,10 @@ class SimpleModel(pl.LightningModule):
         loss /= batch_size
 
         y_hat = torch.cat(y_hat)
-        self.accuracy(torch.argmax(y_hat, -1).view(-1), y)
+        accuracy(torch.argmax(y_hat, -1).view(-1), y)
 
         self.log(
-            "train_loss",
+            f"{prefix}_loss",
             loss,
             on_step=True,
             on_epoch=True,
@@ -107,15 +123,24 @@ class SimpleModel(pl.LightningModule):
         )
 
         self.log(
-            "train_accuracy",
-            self.accuracy,
-            on_step=False,
+            f"{prefix}_accuracy",
+            accuracy,
+            on_step=True,
             on_epoch=True,
             prog_bar=True,
             batch_size=batch_size,
         )
 
         return loss
+
+    def training_step(self, batch, batch_idx):
+        return self.step(batch, batch_idx, "train", self.train_accuracy)
+
+    def validation_step(self, batch, batch_idx):
+        return self.step(batch, batch_idx, "val", self.validation_accuracy)
+
+    def test_step(self, batch, batch_idx):
+        return self.step(batch, batch_idx, "test", self.test_accuracy)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
@@ -147,7 +172,7 @@ if __name__ == "__main__":
 
     model = SimpleModel(
         n=dataset.num_features,
-        out=dataset.num_classes,
+        num_classes=dataset.num_classes,
         class_ratios=dataset.class_ratios,
     )
 
