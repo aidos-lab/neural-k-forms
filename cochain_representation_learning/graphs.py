@@ -17,7 +17,9 @@ class SimpleModel(pl.LightningModule):
 
     # TODO (BR): need to discuss the relevance of the respective channel
     # sizes; maybe we should also permit deeper MLPs?
-    def __init__(self, n, out, c=5, m1=20, m2=10, m3=20, m4=10):
+    def __init__(
+        self, n, out, c=5, m1=20, m2=10, m3=20, m4=10, class_ratios=None
+    ):
         super().__init__()
 
         self.n = n
@@ -47,8 +49,7 @@ class SimpleModel(pl.LightningModule):
             nn.Linear(m4, out),
         )
 
-        # TODO (BR): incorporate ratios of classes again
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.loss_fn = nn.CrossEntropyLoss(weight=class_ratios)
 
     # TODO (BR): document
     def forward(self, x):
@@ -87,8 +88,6 @@ class SimpleModel(pl.LightningModule):
 
             y_pred = self(chains)
             y_pred = y_pred.view(-1, y_pred.shape[-1])
-
-            print(y_pred)
 
             y_hat.append(y_pred)
 
@@ -146,5 +145,10 @@ if __name__ == "__main__":
 
     trainer = pl.Trainer(max_epochs=args.max_epochs, logger=wandb_logger)
 
-    model = SimpleModel(n=dataset.num_features, out=dataset.num_classes)
+    model = SimpleModel(
+        n=dataset.num_features,
+        out=dataset.num_classes,
+        class_ratios=dataset.class_ratios,
+    )
+
     trainer.fit(model, dataset)

@@ -136,6 +136,13 @@ class TUGraphDataset(pl.LightningDataModule):
 
         n_instances = len(dataset)
 
+        ratios = _get_labels(dataset)
+        ratios = [r.item() for r in ratios]
+        ratios = np.bincount(ratios).astype(float)
+        ratios /= n_instances
+
+        self.class_ratios = torch.tensor(ratios, dtype=torch.float32)
+
         skf = StratifiedKFold(
             n_splits=self.n_splits, random_state=self.seed, shuffle=True
         )
