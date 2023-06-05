@@ -83,19 +83,21 @@ class SimpleModel(pl.LightningModule):
         y_hat = []
 
         for i in range(batch_size):
-            chains = x[edge_slices[i] : edge_slices[i + 1], :]
+            chains = x[edge_slices[i]:edge_slices[i + 1], :]  # fmt: skip
 
             y_pred = self(chains)
             y_pred = y_pred.view(-1, y_pred.shape[-1])
+
+            print(y_pred)
 
             y_hat.append(y_pred)
 
             loss += self.loss_fn(y_pred, y[i].view(-1))
 
+        loss /= batch_size
+
         y_hat = torch.cat(y_hat)
         self.accuracy(torch.argmax(y_hat, -1).view(-1), y)
-
-        loss /= batch_size
 
         self.log(
             "train_loss",
@@ -108,15 +110,16 @@ class SimpleModel(pl.LightningModule):
         self.log(
             "train_accuracy",
             self.accuracy,
-            on_step=True,
+            on_step=False,
             on_epoch=True,
+            prog_bar=True,
             batch_size=batch_size,
         )
 
         return loss
 
     def configure_optimizers(self):
-        optimizer = torch.optim.SGD(self.parameters(), lr=1e-2)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
 
 
@@ -125,7 +128,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-epochs", type=int, default=50)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--name", type=str, default="MUTAG")
 
     args = parser.parse_args()
