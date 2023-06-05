@@ -127,8 +127,8 @@ if __name__ == "__main__":
     parser.add_argument("--max-epochs", type=int, default=50)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--batch-size", type=int, default=8)
-    parser.add_argument("--name", type=str, default="MUTAG")
+    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--name", type=str, default="AIDS")
 
     args = parser.parse_args()
 
