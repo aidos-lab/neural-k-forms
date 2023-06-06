@@ -23,31 +23,28 @@ class SimpleModel(nn.Module):
     # sizes; maybe we should also permit deeper MLPs?
     def __init__(
         self,
-        n,
+        input_dim,
         num_classes,
-        c=5,
-        m1=20,
-        m2=10,
-        hidden_dim=64
+        num_steps=5,
+        hidden_dim=32
     ):
         super().__init__()
 
-        self.n = n
+        self.input_dim = input_dim
         self.num_classes = num_classes
-        self.c = c
-        self.m1 = m1
-        self.m2 = m2
+        self.num_steps = num_steps
+        self.hidden_dim = hidden_dim
 
         self.vector_field = nn.Sequential(
-            nn.Linear(n, m1),
+            nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(m1, m2),
+            nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
-            nn.Linear(m2, n * c),
+            nn.Linear(hidden_dim // 2, input_dim * num_steps),
         )
 
         self.classifier = nn.Sequential(
-            nn.Linear(c, hidden_dim),
+            nn.Linear(num_steps, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
@@ -182,7 +179,7 @@ if __name__ == "__main__":
     trainer = pl.Trainer(max_epochs=args.max_epochs, logger=wandb_logger)
 
     backbone = SimpleModel(
-        n=dataset.num_features,
+        input_dim=dataset.num_features,
         num_classes=dataset.num_classes,
     )
 
@@ -190,3 +187,4 @@ if __name__ == "__main__":
         backbone, dataset.num_classes, dataset.class_ratios
     )
     trainer.fit(model, dataset)
+    trainer.test(model, dataset)
