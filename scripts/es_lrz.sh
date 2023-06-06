@@ -20,12 +20,13 @@ if [ -z "$CMD" ]; then
   exit -1
 fi
 
-sbatch --clusters=cm2_tiny                            \
-       --partition=cm2_tiny                           \
+sbatch -J ${NAME}                                     \
+       -o "${NAME}_%j.out"                            \
+       --clusters=cm2                                 \
+       --partition=cm2_std                            \
        --mail-user=bastian.rieck@helmholtz-munich.de  \
        --mail-type=end                                \
-       -J ${NAME}                                     \
-       -o "${NAME}_%j.out"                            \
-       --cpus-per-task=4                              \
+       --nodes=1                                      \
+       --cpus-per-task=2                              \
        --mem=8G                                       \
        --wrap "poetry run ${CMD}"
