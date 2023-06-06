@@ -161,6 +161,7 @@ if __name__ == "__main__":
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--hidden-dim", type=int, default=32)
     parser.add_argument("--name", type=str, default="AIDS")
 
     args = parser.parse_args()
@@ -181,6 +182,7 @@ if __name__ == "__main__":
     backbone = SimpleModel(
         input_dim=dataset.num_features,
         num_classes=dataset.num_classes,
+        hidden_dim=args.hidden_dim
     )
 
     model = CochainModelWrapper(
