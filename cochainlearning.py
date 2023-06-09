@@ -56,7 +56,7 @@ def plot_component_vf(f, ax, comp = 0, x_range=5, y_range=5):
         for j in range(20):
             inp = np.array([X[i,j],Y[i,j]])
             inp = torch.tensor(inp).float()
-            tv = f.forward(inp).reshape(2,c)
+            tv = f.forward(inp).reshape(2,-1)
 
             U[i,j] = tv[:,comp][0]
             V[i,j] = tv[:,comp][1]
