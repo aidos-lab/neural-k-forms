@@ -24,17 +24,14 @@ class SimpleModel(nn.Module):
     def __init__(self, input_dim, num_classes, num_steps=5, hidden_dim=32):
         super().__init__()
 
-        self.input_dim = input_dim
-        self.num_classes = num_classes
-        self.num_steps = num_steps
-        self.hidden_dim = hidden_dim
+        output_dim = input_dim * num_steps
 
         self.vector_field = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
-            nn.Linear(hidden_dim // 2, input_dim * num_steps),
+            nn.Linear(hidden_dim // 2, output_dim),
         )
 
         self.classifier = nn.Sequential(
@@ -45,26 +42,39 @@ class SimpleModel(nn.Module):
             nn.Linear(hidden_dim // 2, num_classes),
         )
 
-    # TODO (BR): document
-    def forward(self, x):
-        # asses the dimensions are correct somewhere
-        # Here the input is a chain, and the output is a vector of
-        # probabilities
+    def forward(self, batch):
+        # `batch` is the input batch (following `pytorch-geometric`
+        # conventions), containing multiple graphs. We deconstruct
+        # this into different inputs (chain sets).
+        #
+        # TODO (BR): extend documentation :-)
+        #
+        x = batch["chains"]
 
-        X = generate_cochain_data_matrix(self.vector_field, x)
+        edge_slices = batch._slice_dict["edge_index"]
+        batch_size = len(edge_slices) - 1
 
-        # orientation invariant square L2-norm readout function
-        # TODO (BR): this is something we might want to change, no? If
-        # I understand the code correctly, we are getting information
-        # for all edges. I wonder whether it would make sense to think
-        # about some other readout functions here (potentially using
-        # attention weights).
-        X = torch.diag(X.T @ X)
+        all_pred = []
 
-        pred = self.classifier(X)
-        pred = nn.functional.softmax(pred, -1)
+        for i in range(batch_size):
+            chains = x[edge_slices[i]:edge_slices[i + 1], :]  # fmt: skip
 
-        return pred
+            X = generate_cochain_data_matrix(self.vector_field, chains)
+
+            # orientation invariant square L2-norm readout function
+            # TODO (BR): this is something we might want to change, no? If
+            # I understand the code correctly, we are getting information
+            # for all edges. I wonder whether it would make sense to think
+            # about some other readout functions here (potentially using
+            # attention weights).
+            X = torch.diag(X.T @ X)
+
+            pred = self.classifier(X)
+            pred = nn.functional.softmax(pred, -1)
+
+            all_pred.append(pred)
+
+        return torch.stack(all_pred)
 
 
 class CochainModelWrapper(pl.LightningModule):
@@ -81,6 +91,9 @@ class CochainModelWrapper(pl.LightningModule):
         self.backbone = backbone
         self.loss_fn = nn.CrossEntropyLoss(weight=class_ratios)
 
+        num_features = 5
+        self.batch_norm = nn.BatchNorm1d(num_features)
+
         self.train_accuracy = tm.Accuracy(
             task="multiclass", num_classes=num_classes
         )
@@ -92,36 +105,18 @@ class CochainModelWrapper(pl.LightningModule):
         )
 
     def step(self, batch, batch_idx, prefix, accuracy):
-        x, y = batch["chains"], batch["y"]
+        y = batch["y"]
 
-        edge_slices = batch._slice_dict["edge_index"]
-        batch_size = len(edge_slices) - 1
+        y_pred = self.backbone(batch)
+        loss = self.loss_fn(y_pred, y)
 
-        loss = 0.0
-
-        y_hat = []
-
-        for i in range(batch_size):
-            chains = x[edge_slices[i]:edge_slices[i + 1], :]  # fmt: skip
-
-            y_pred = self.backbone(chains)
-            y_pred = y_pred.view(-1, y_pred.shape[-1])
-
-            y_hat.append(y_pred)
-
-            loss += self.loss_fn(y_pred, y[i].view(-1))
-
-        loss /= batch_size
-
-        y_hat = torch.cat(y_hat)
-        accuracy(torch.argmax(y_hat, -1).view(-1), y)
+        accuracy(torch.argmax(y_pred, -1), y)
 
         self.log(
             f"{prefix}_loss",
             loss,
             on_step=False,
             on_epoch=True,
-            batch_size=batch_size,
         )
 
         self.log(
@@ -130,7 +125,6 @@ class CochainModelWrapper(pl.LightningModule):
             on_step=False,
             on_epoch=True,
             prog_bar=True,
-            batch_size=batch_size,
         )
 
         return loss
@@ -188,7 +182,7 @@ if __name__ == "__main__":
     early_stopping = pl.callbacks.EarlyStopping(
         monitor="val_accuracy",
         mode="max",
-        patience=10,
+        patience=20,
     )
 
     trainer = pl.Trainer(
