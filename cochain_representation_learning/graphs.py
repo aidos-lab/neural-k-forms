@@ -21,13 +21,7 @@ class SimpleModel(nn.Module):
 
     # TODO (BR): need to discuss the relevance of the respective channel
     # sizes; maybe we should also permit deeper MLPs?
-    def __init__(
-        self,
-        input_dim,
-        num_classes,
-        num_steps=5,
-        hidden_dim=32
-    ):
+    def __init__(self, input_dim, num_classes, num_steps=5, hidden_dim=32):
         super().__init__()
 
         self.input_dim = input_dim
@@ -125,7 +119,7 @@ class CochainModelWrapper(pl.LightningModule):
         self.log(
             f"{prefix}_loss",
             loss,
-            on_step=True,
+            on_step=False,
             on_epoch=True,
             batch_size=batch_size,
         )
@@ -133,7 +127,7 @@ class CochainModelWrapper(pl.LightningModule):
         self.log(
             f"{prefix}_accuracy",
             accuracy,
-            on_step=True,
+            on_step=False,
             on_epoch=True,
             prog_bar=True,
             batch_size=batch_size,
@@ -152,7 +146,21 @@ class CochainModelWrapper(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.backbone.parameters(), lr=1e-3)
-        return optimizer
+
+        # Add a scheduler that halves the learning rate as soon as the
+        # validation loss starts plateauing.
+        #
+        # TODO (BR): Make some of these parameters configurable.
+        scheduler = {
+            "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer, mode="min", factor=0.5, patience=5
+            ),
+            "monitor": "val_loss",
+            "frequency": 1,
+            "interval": "epoch",
+        }
+
+        return [optimizer], [scheduler]
 
 
 if __name__ == "__main__":
@@ -160,7 +168,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-epochs", type=int, default=50)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--hidden-dim", type=int, default=32)
     parser.add_argument("--name", type=str, default="AIDS")
 
@@ -177,12 +185,22 @@ if __name__ == "__main__":
         log_model=False,
     )
 
-    trainer = pl.Trainer(max_epochs=args.max_epochs, logger=wandb_logger)
+    early_stopping = pl.callbacks.EarlyStopping(
+        monitor="val_accuracy",
+        mode="max",
+        patience=10,
+    )
+
+    trainer = pl.Trainer(
+        max_epochs=args.max_epochs,
+        logger=wandb_logger,
+        callbacks=early_stopping,
+    )
 
     backbone = SimpleModel(
         input_dim=dataset.num_features,
         num_classes=dataset.num_classes,
-        hidden_dim=args.hidden_dim
+        hidden_dim=args.hidden_dim,
     )
 
     model = CochainModelWrapper(
