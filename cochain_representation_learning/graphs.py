@@ -21,13 +21,7 @@ class SimpleModel(nn.Module):
 
     # TODO (BR): need to discuss the relevance of the respective channel
     # sizes; maybe we should also permit deeper MLPs?
-    def __init__(
-        self,
-        input_dim,
-        num_classes,
-        num_steps=5,
-        hidden_dim=32
-    ):
+    def __init__(self, input_dim, num_classes, num_steps=5, hidden_dim=32):
         super().__init__()
 
         self.input_dim = input_dim
@@ -152,7 +146,21 @@ class CochainModelWrapper(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.backbone.parameters(), lr=1e-3)
-        return optimizer
+
+        # Add a scheduler that halves the learning rate as soon as the
+        # validation loss starts plateauing.
+        #
+        # TODO (BR): Make some of these parameters configurable.
+        scheduler = {
+            "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer, mode="min", factor=0.5, patience=5
+            ),
+            "monitor": "val_loss",
+            "frequency": 1,
+            "interval": "epoch",
+        }
+
+        return [optimizer], [scheduler]
 
 
 if __name__ == "__main__":
@@ -182,7 +190,7 @@ if __name__ == "__main__":
     backbone = SimpleModel(
         input_dim=dataset.num_features,
         num_classes=dataset.num_classes,
-        hidden_dim=args.hidden_dim
+        hidden_dim=args.hidden_dim,
     )
 
     model = CochainModelWrapper(
