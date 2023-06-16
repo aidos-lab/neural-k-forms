@@ -34,6 +34,8 @@ class SimpleModel(nn.Module):
             nn.Linear(hidden_dim // 2, output_dim),
         )
 
+        self.batch_norm = nn.BatchNorm1d(num_steps)
+
         self.classifier = nn.Sequential(
             nn.Linear(num_steps, hidden_dim),
             nn.ReLU(),
@@ -74,6 +76,7 @@ class SimpleModel(nn.Module):
             all_features.append(X)
 
         all_features = torch.stack(all_features)
+        all_features = self.batch_norm(all_features)
 
         pred = self.classifier(all_features)
         pred = nn.functional.softmax(pred, -1)
@@ -94,9 +97,6 @@ class CochainModelWrapper(pl.LightningModule):
 
         self.backbone = backbone
         self.loss_fn = nn.CrossEntropyLoss(weight=class_ratios)
-
-        num_features = 5
-        self.batch_norm = nn.BatchNorm1d(num_features)
 
         self.train_accuracy = tm.Accuracy(
             task="multiclass", num_classes=num_classes
