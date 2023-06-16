@@ -188,7 +188,7 @@ if __name__ == "__main__":
     early_stopping = pl.callbacks.EarlyStopping(
         monitor="val_accuracy",
         mode="max",
-        patience=5,
+        patience=10,
     )
 
     trainer = pl.Trainer(
