@@ -128,6 +128,7 @@ class TUGraphDataset(pl.LightningDataModule):
             name=self.name,
             cleaned=cleaned,
             transform=self.transform,
+            use_node_attr=True,
             pre_transform=self.pre_transform,
         )
 
