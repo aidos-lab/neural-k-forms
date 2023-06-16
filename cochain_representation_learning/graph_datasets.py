@@ -42,12 +42,14 @@ class ConvertGraphToChains(BaseTransform):
         # embedding dimension
         n = node_features.shape[1]
 
-        # sort the edge indices
+        # sort the edge indices; we are converting this directly to
+        # a `numpy` array in order to speed up the calculation. The
+        # alternative construction triggers some warnings.
         edges = torch.tensor(
-            [
+            np.asarray([
                 np.sort([edge_index[i][0], edge_index[i][1]])
                 for i in range(len(edge_index))
-            ]
+            ])
         )
 
         # initialize chains
