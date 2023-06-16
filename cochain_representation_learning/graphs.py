@@ -121,6 +121,7 @@ class CochainModelWrapper(pl.LightningModule):
             loss,
             on_step=False,
             on_epoch=True,
+            batch_size=len(batch),
         )
 
         self.log(
@@ -129,6 +130,7 @@ class CochainModelWrapper(pl.LightningModule):
             on_step=False,
             on_epoch=True,
             prog_bar=True,
+            batch_size=len(batch),
         )
 
         return loss
