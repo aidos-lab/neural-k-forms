@@ -125,7 +125,7 @@ class CochainModelWrapper(pl.LightningModule):
         self.log(
             f"{prefix}_loss",
             loss,
-            on_step=True,
+            on_step=False,
             on_epoch=True,
             batch_size=batch_size,
         )
@@ -133,7 +133,7 @@ class CochainModelWrapper(pl.LightningModule):
         self.log(
             f"{prefix}_accuracy",
             accuracy,
-            on_step=True,
+            on_step=False,
             on_epoch=True,
             prog_bar=True,
             batch_size=batch_size,
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-epochs", type=int, default=50)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--hidden-dim", type=int, default=32)
     parser.add_argument("--name", type=str, default="AIDS")
 
