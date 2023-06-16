@@ -185,7 +185,17 @@ if __name__ == "__main__":
         log_model=False,
     )
 
-    trainer = pl.Trainer(max_epochs=args.max_epochs, logger=wandb_logger)
+    early_stopping = pl.callbacks.EarlyStopping(
+        monitor="val_accuracy",
+        mode="max",
+        patience=5,
+    )
+
+    trainer = pl.Trainer(
+        max_epochs=args.max_epochs,
+        logger=wandb_logger,
+        callbacks=early_stopping,
+    )
 
     backbone = SimpleModel(
         input_dim=dataset.num_features,
