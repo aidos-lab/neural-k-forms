@@ -165,12 +165,13 @@ class CochainModelWrapper(pl.LightningModule):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--max-epochs", type=int, default=50)
-    parser.add_argument("--fold", type=int, default=0)
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--hidden-dim", type=int, default=32)
-    parser.add_argument("--name", type=str, default="AIDS")
+    parser.add_argument("-S", "--num-steps", type=int, default=5)
+    parser.add_argument("-e", "--max-epochs", type=int, default=50)
+    parser.add_argument("-f", "--fold", type=int, default=0)
+    parser.add_argument("-s", "--seed", type=int, default=42)
+    parser.add_argument("-b", "--batch-size", type=int, default=32)
+    parser.add_argument("-h", "--hidden-dim", type=int, default=32)
+    parser.add_argument("-n", "--name", type=str, default="AIDS")
 
     args = parser.parse_args()
 
@@ -188,7 +189,7 @@ if __name__ == "__main__":
     early_stopping = pl.callbacks.EarlyStopping(
         monitor="val_accuracy",
         mode="max",
-        patience=20,
+        patience=40,
     )
 
     trainer = pl.Trainer(
@@ -201,6 +202,7 @@ if __name__ == "__main__":
         input_dim=dataset.num_features,
         num_classes=dataset.num_classes,
         hidden_dim=args.hidden_dim,
+        num_steps=args.num_steps
     )
 
     model = CochainModelWrapper(
