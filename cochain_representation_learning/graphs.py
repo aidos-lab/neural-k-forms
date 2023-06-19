@@ -237,10 +237,12 @@ if __name__ == "__main__":
         patience=40,
     )
 
+    lr_monitor = pl.callbacks.LearningRateMonitor()
+
     trainer = pl.Trainer(
         max_epochs=args.max_epochs,
         logger=wandb_logger,
-        callbacks=early_stopping,
+        callbacks=[early_stopping, lr_monitor],
     )
 
     if args.baseline:
