@@ -171,6 +171,17 @@ def integral_SC(kform, phi, simplices, dim, num_sub):
             val += integral_simplex(kform, phi_simplex, deter_tensor, num_sub, v)
     return val
 
+def form2cochain(kform, phi, simplices, dim, num_sub): 
+    cochain = torch.zeros(len(simplices))
+    deter_tensor = build_big_deter_tensor(dim,2) ## maybe this computation can be done outside the function 
+    for i in range(len(simplices)):
+        simplex = simplices[i]
+        phi_simplex = torch.zeros((len(simplex), dim))
+        phi_simplex = phi[torch.tensor(simplex)]
+        cochain[i] = integral_simplex(kform, phi_simplex, deter_tensor, num_sub)
+
+    return cochain
+
 
 ########### SURFACE GENERATION #########
 
@@ -184,6 +195,7 @@ def random_surface_yz(n, eps = 0.1):
     Z = Y + Eps
     # return an array of points
     ar = np.array([X.flatten(), Y.flatten(), Z.flatten()]).T
+    ar = torch.from_numpy(ar)
     return X, Y, Z, ar
 
 def random_surface_xz(n, eps = 0.1):
@@ -192,13 +204,13 @@ def random_surface_xz(n, eps = 0.1):
     y = np.sort(np.random.uniform(-10, 10, n))
     Eps = np.random.uniform(-eps,eps, n)
     #EPS = np.meshgrid(Eps, Eps)
-    print(y)
     
     X, Y = np.meshgrid(x, y)
     Z = X + Eps
     # return an array of points
     
     ar = np.array([X.flatten(), Y.flatten(), Z.flatten()]).T
+    ar = torch.from_numpy(ar)
 
     return X, Y, Z, ar
 
@@ -213,6 +225,8 @@ def random_curved_surface(n, eps = 0.1):
     Z = X**2 + Y**2 + Eps 
 
     ar = np.array([X.flatten(), Y.flatten(), Z.flatten()]).T
+    ar = torch.from_numpy(ar)
+
     return X, Y, Z, ar
     
 
