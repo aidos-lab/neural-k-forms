@@ -14,6 +14,8 @@ from cochain_representation_learning import DATA_ROOT
 
 from torch_geometric.data import DataLoader
 
+from torch_geometric.datasets import GNNBenchmarkDataset
+from torch_geometric.datasets import LRGBDataset
 from torch_geometric.datasets import TUDataset
 
 from torch_geometric.transforms import BaseTransform
@@ -119,18 +121,38 @@ class TUGraphDataset(pl.LightningDataModule):
         self.fold = fold
 
     def prepare_data(self):
-        # TODO (BR): Do we want to have cleaned versions of these data
-        # sets that include only non-isomorphic graphs?
-        cleaned = False
 
-        dataset = TUDataset(
-            root=os.path.join(DATA_ROOT, "TU"),
-            name=self.name,
-            cleaned=cleaned,
-            transform=self.transform,
-            use_node_attr=True,
-            pre_transform=self.pre_transform,
-        )
+        # TODO: Make this smarter; we should support automated base
+        # class selection.
+        #
+        # TODO: Make splits configurable.
+        if self.name == "Peptides-func":
+            dataset = LRGBDataset(
+                root=os.path.join(DATA_ROOT, "LRGB"),
+                name=self.name,
+                transform=self.transform,
+                pre_transform=self.pre_transform,
+            )
+        elif self.name == "PATTERN" or self.name == "MNIST":
+            dataset = GNNBenchmarkDataset(
+                root=os.path.join(DATA_ROOT, "GNNB"),
+                name=self.name,
+                transform=self.transform,
+                pre_transform=self.pre_transform,
+            )
+        else:
+            # TODO (BR): Do we want to have cleaned versions of these data
+            # sets that include only non-isomorphic graphs?
+            cleaned = False
+
+            dataset = TUDataset(
+                root=os.path.join(DATA_ROOT, "TU"),
+                name=self.name,
+                cleaned=cleaned,
+                transform=self.transform,
+                use_node_attr=True,
+                pre_transform=self.pre_transform,
+            )
 
         self.num_classes = dataset.num_classes
         self.num_features = dataset.num_features
