@@ -214,6 +214,7 @@ if __name__ == "__main__":
         name=args.name,
         project="cochain-representation-learning",
         log_model=False,
+        tags=["baseline"] if args.baseline else None
     )
 
     # Store the configuration in the logger so that we can make
