@@ -170,7 +170,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--fold", type=int, default=0)
     parser.add_argument("-s", "--seed", type=int, default=42)
     parser.add_argument("-b", "--batch-size", type=int, default=32)
-    parser.add_argument("-h", "--hidden-dim", type=int, default=32)
+    parser.add_argument("-H", "--hidden-dim", type=int, default=32)
     parser.add_argument("-n", "--name", type=str, default="AIDS")
 
     args = parser.parse_args()
