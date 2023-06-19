@@ -9,11 +9,14 @@ import argparse
 import torch
 import torch.nn as nn
 
-import pytorch_lightning as pl
 import torchmetrics as tm
+import pytorch_lightning as pl
 
 from cochain_representation_learning import generate_cochain_data_matrix
 from cochain_representation_learning.graph_datasets import TUGraphDataset
+
+from torch_geometric.nn.models import GIN
+from torch_geometric.nn.pool import global_add_pool
 
 
 class SimpleModel(nn.Module):
@@ -86,8 +89,32 @@ class SimpleModel(nn.Module):
         return pred
 
 
-class CochainModelWrapper(pl.LightningModule):
-    """Wrapper class for cochain representation learning on graphs.
+class GINModel(nn.Module):
+    """Simple GIN model."""
+
+    def __init__(self, input_dim, num_layers, num_classes, hidden_dim=32):
+        super().__init__()
+
+        self.model = GIN(
+            in_channels=input_dim,
+            # This means that the model will have (roughly!) the same
+            # number of parameters than ours.
+            hidden_channels=2 * hidden_dim,
+            num_layers=num_layers,
+            out_channels=num_classes,
+        )
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x = self.model(x, edge_index)
+        x = global_add_pool(x, data.batch)
+
+        return nn.functional.softmax(x, dim=-1)
+
+
+class ModelWrapper(pl.LightningModule):
+    """Wrapper class for learning on graphs.
 
     The purpose of this wrapper is to permit learning representations
     with various internal models, which we refer to as backbones. The
@@ -167,6 +194,7 @@ class CochainModelWrapper(pl.LightningModule):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("-B", "--baseline", action="store_true")
     parser.add_argument("-S", "--num-steps", type=int, default=5)
     parser.add_argument("-e", "--max-epochs", type=int, default=50)
     parser.add_argument("-f", "--fold", type=int, default=0)
@@ -191,6 +219,7 @@ if __name__ == "__main__":
     # Store the configuration in the logger so that we can make
     # everything searchable later on.
     config = {
+        "baseline": args.baseline,
         "num_steps": args.num_steps,
         "max_epochs": args.max_epochs,
         "fold": args.fold,
@@ -214,15 +243,21 @@ if __name__ == "__main__":
         callbacks=early_stopping,
     )
 
-    backbone = SimpleModel(
-        input_dim=dataset.num_features,
-        num_classes=dataset.num_classes,
-        hidden_dim=args.hidden_dim,
-        num_steps=args.num_steps,
-    )
+    if args.baseline:
+        backbone = GINModel(
+            input_dim=dataset.num_features,
+            num_classes=dataset.num_classes,
+            hidden_dim=args.hidden_dim,
+            num_layers=args.num_steps,
+        )
+    else:
+        backbone = SimpleModel(
+            input_dim=dataset.num_features,
+            num_classes=dataset.num_classes,
+            hidden_dim=args.hidden_dim,
+            num_steps=args.num_steps,
+        )
 
-    model = CochainModelWrapper(
-        backbone, dataset.num_classes, dataset.class_ratios
-    )
+    model = ModelWrapper(backbone, dataset.num_classes, dataset.class_ratios)
     trainer.fit(model, dataset)
     trainer.test(model, dataset)
