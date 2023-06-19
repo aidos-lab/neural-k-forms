@@ -186,6 +186,20 @@ if __name__ == "__main__":
         log_model=False,
     )
 
+    # Store the configuration in the logger so that we can make
+    # everything searchable later on.
+    config = {
+        "num_steps": args.num_steps,
+        "max_epochs": args.max_epochs,
+        "fold": args.fold,
+        "seed": args.seed,
+        "batch_size": args.batch_size,
+        "hidden_dim": args.hidden_dim,
+        "dataset": args.name,
+    }
+
+    wandb_logger.experiment.config.update(config)
+
     early_stopping = pl.callbacks.EarlyStopping(
         monitor="val_accuracy",
         mode="max",
@@ -202,7 +216,7 @@ if __name__ == "__main__":
         input_dim=dataset.num_features,
         num_classes=dataset.num_classes,
         hidden_dim=args.hidden_dim,
-        num_steps=args.num_steps
+        num_steps=args.num_steps,
     )
 
     model = CochainModelWrapper(
