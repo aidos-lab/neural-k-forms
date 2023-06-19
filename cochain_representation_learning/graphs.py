@@ -34,6 +34,7 @@ class SimpleModel(nn.Module):
             nn.Linear(hidden_dim // 2, output_dim),
         )
 
+        self.attention = nn.MultiheadAttention(num_steps, 1)
         self.batch_norm = nn.BatchNorm1d(num_steps)
 
         self.classifier = nn.Sequential(
@@ -64,6 +65,7 @@ class SimpleModel(nn.Module):
             chains = x[edge_slices[i]:edge_slices[i + 1], :]  # fmt: skip
 
             X = generate_cochain_data_matrix(self.vector_field, chains)
+            X, _ = self.attention(X, X, X, need_weights=False)
 
             # orientation invariant square L2-norm readout function
             # TODO (BR): this is something we might want to change, no? If
