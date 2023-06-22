@@ -124,6 +124,62 @@ def describe(dataset):
     print(f"Is undirected: {data.is_undirected()}")
 
 
+class LongRangGraphDataset(pl.LightningDataModule):
+    def __init__(
+        self,
+        name,
+        batch_size,
+    ):
+        super().__init__()
+        self.name = name
+        self.batch_size = batch_size
+
+    def prepare_data(self):
+        def _load_data(split):
+            dataset = LRGBDataset(
+                root=os.path.join(DATA_ROOT, "LRGB"),
+                name=self.name,
+                split=split,
+                # TODO: Add chain conversion
+                transform=OneHotDecoding(),
+            )
+
+            return dataset
+
+        self.train = _load_data("train")
+        self.val = _load_data("val")
+        self.test = _load_data("test")
+
+        self.num_classes = self.train.num_classes
+        self.num_features = self.train.num_features
+        self.class_ratios = _get_class_ratios(self.train)
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train,
+            batch_size=self.batch_size,
+            shuffle=True,
+            drop_last=True,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val,
+            batch_size=self.batch_size,
+            shuffle=False,
+            drop_last=False,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.test,
+            batch_size=self.batch_size,
+            shuffle=False,
+            drop_last=False,
+            pin_memory=True,
+        )
+
+
 class TUGraphDataset(pl.LightningDataModule):
     def __init__(
         self,

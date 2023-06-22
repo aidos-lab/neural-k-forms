@@ -13,6 +13,8 @@ import torchmetrics as tm
 import pytorch_lightning as pl
 
 from cochain_representation_learning import generate_cochain_data_matrix
+
+from cochain_representation_learning.graph_datasets import LongRangGraphDataset
 from cochain_representation_learning.graph_datasets import TUGraphDataset
 
 from torch_geometric.nn.models import GIN
@@ -98,7 +100,7 @@ class GINModel(nn.Module):
         self.model = GIN(
             in_channels=input_dim,
             # This means that the model will have (roughly!) the same
-            # number of parameters than ours.
+            # number of parameters as ours.
             hidden_channels=2 * hidden_dim,
             num_layers=num_layers,
             out_channels=num_classes,
@@ -205,16 +207,22 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    dataset = TUGraphDataset(
-        name=args.name, batch_size=args.batch_size, seed=args.seed
-    )
+    if args.name == "Peptides-func":
+        dataset = LongRangGraphDataset(
+            name=args.name, batch_size=args.batch_size
+        )
+    else:
+        dataset = TUGraphDataset(
+            name=args.name, batch_size=args.batch_size, seed=args.seed
+        )
+
     dataset.prepare_data()
 
     wandb_logger = pl.loggers.WandbLogger(
         name=args.name,
         project="cochain-representation-learning",
         log_model=False,
-        tags=["baseline"] if args.baseline else None
+        tags=["baseline"] if args.baseline else None,
     )
 
     # Store the configuration in the logger so that we can make
