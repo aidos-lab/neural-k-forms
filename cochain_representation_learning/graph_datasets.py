@@ -48,7 +48,6 @@ def _get_class_ratios(dataset):
 
 
 class OneHotDecoding(BaseTransform):
-
     def __call__(self, data):
         """Adjust multi-class labels (reverse one-hot encoding).
 
@@ -81,10 +80,12 @@ class ConvertGraphToChains(BaseTransform):
         # a `numpy` array in order to speed up the calculation. The
         # alternative construction triggers some warnings.
         edges = torch.tensor(
-            np.asarray([
-                np.sort([edge_index[i][0], edge_index[i][1]])
-                for i in range(len(edge_index))
-            ])
+            np.asarray(
+                [
+                    np.sort([edge_index[i][0], edge_index[i][1]])
+                    for i in range(len(edge_index))
+                ]
+            )
         )
 
         # initialize chains
@@ -210,19 +211,11 @@ class TUGraphDataset(pl.LightningDataModule):
         self.fold = fold
 
     def prepare_data(self):
-
         # TODO: Make this smarter; we should support automated base
         # class selection.
         #
         # TODO: Make splits configurable.
-        if self.name == "Peptides-func":
-            dataset = LRGBDataset(
-                root=os.path.join(DATA_ROOT, "LRGB"),
-                name=self.name,
-                transform=self.transform,
-                pre_transform=self.pre_transform,
-            )
-        elif self.name == "PATTERN" or self.name == "MNIST":
+        if self.name == "PATTERN" or self.name == "MNIST":
             dataset = GNNBenchmarkDataset(
                 root=os.path.join(DATA_ROOT, "GNNB"),
                 name=self.name,
@@ -247,13 +240,9 @@ class TUGraphDataset(pl.LightningDataModule):
         self.num_features = dataset.num_features
 
         n_instances = len(dataset)
+        labels = _get_labels(dataset)
 
-        ratios = _get_labels(dataset)
-        ratios = [r.item() for r in ratios]
-        ratios = np.bincount(ratios).astype(float)
-        ratios /= n_instances
-
-        self.class_ratios = torch.tensor(ratios, dtype=torch.float32)
+        self.class_ratios = _get_class_ratios(dataset)
 
         skf = StratifiedKFold(
             n_splits=self.n_splits, random_state=self.seed, shuffle=True
@@ -261,7 +250,7 @@ class TUGraphDataset(pl.LightningDataModule):
 
         skf_iterator = skf.split(
             torch.tensor([i for i in range(n_instances)]),
-            torch.tensor(_get_labels(dataset)),
+            torch.tensor(labels),
         )
 
         train_index, test_index = next(
