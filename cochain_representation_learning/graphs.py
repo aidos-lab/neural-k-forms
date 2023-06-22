@@ -24,8 +24,8 @@ from torch_geometric.nn.models import GIN
 from torch_geometric.nn.pool import global_add_pool
 
 
-class SimpleModel(nn.Module):
-    """Simple model using linear layers."""
+class ChainModel(nn.Module):
+    """Simple 1-chain model using linear layers."""
 
     # TODO (BR): need to discuss the relevance of the respective channel
     # sizes; maybe we should also permit deeper MLPs?
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     # Store the configuration in the logger so that we can make
     # everything searchable later on.
     config = {
-        "baseline": args.baseline,
+        "model": args.baseline if args.baseline is not None else "DRACO",
         "num_steps": args.num_steps,
         "max_epochs": args.max_epochs,
         "fold": args.fold,
@@ -284,7 +284,7 @@ if __name__ == "__main__":
             baseline=args.baseline,
         )
     else:
-        backbone = SimpleModel(
+        backbone = ChainModel(
             input_dim=dataset.num_features,
             num_classes=dataset.num_classes,
             hidden_dim=args.hidden_dim,
