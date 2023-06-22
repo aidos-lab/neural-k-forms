@@ -79,10 +79,10 @@ class ConvertGraphToChains(BaseTransform):
         edges, _ = torch.sort(edge_index, dim=1)
         chains = torch.zeros((r, 2, n))
 
-        # turn edges into a 1-chain
-        for i in range(r):
-            chains[i, 0, :] = node_features[edges[i][0]]
-            chains[i, 1, :] = node_features[edges[i][1]]
+        # Turn edges into a 1-chain, described by the two node features,
+        # respectively.
+        chains[:, 0, :] = node_features[edges[:, 0]]
+        chains[:, 1, :] = node_features[edges[:, 1]]
 
         data["chains"] = chains
         return data
