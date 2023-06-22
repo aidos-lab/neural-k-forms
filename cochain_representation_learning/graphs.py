@@ -17,7 +17,10 @@ from cochain_representation_learning import generate_cochain_data_matrix
 from cochain_representation_learning.graph_datasets import LargeGraphDataset
 from cochain_representation_learning.graph_datasets import TUGraphDataset
 
+from torch_geometric.nn.models import GAT
+from torch_geometric.nn.models import GCN
 from torch_geometric.nn.models import GIN
+
 from torch_geometric.nn.pool import global_add_pool
 
 
@@ -91,13 +94,27 @@ class SimpleModel(nn.Module):
         return pred
 
 
-class GINModel(nn.Module):
-    """Simple GIN model."""
+class BaselineModel(nn.Module):
+    """Simple baseline model.
 
-    def __init__(self, input_dim, num_layers, num_classes, hidden_dim=32):
+    The purpose of this module is to wrap a simple GNN module with
+    a roughly similar number of parameters as a chain-based model.
+    """
+
+    name_to_class = {
+        "GAT": GAT,
+        "GIN": GIN,
+        "GCN": GCN,
+    }
+
+    def __init__(
+        self, input_dim, num_layers, num_classes, hidden_dim=32, baseline="GIN"
+    ):
         super().__init__()
 
-        self.model = GIN(
+        base_class = self.name_to_class[baseline]
+
+        self.model = base_class(
             in_channels=input_dim,
             # This means that the model will have (roughly!) the same
             # number of parameters as ours.
@@ -196,7 +213,13 @@ class ModelWrapper(pl.LightningModule):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-B", "--baseline", action="store_true")
+    parser.add_argument(
+        "-B",
+        "--baseline",
+        type=str,
+        choices=["GAT", "GCN", "GIN"],
+        default=None,
+    )
     parser.add_argument("-S", "--num-steps", type=int, default=5)
     parser.add_argument("-e", "--max-epochs", type=int, default=50)
     parser.add_argument("-f", "--fold", type=int, default=0)
@@ -208,9 +231,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.name in ["Peptides-func", "MNIST", "PATTERN"]:
-        dataset = LargeGraphDataset(
-            name=args.name, batch_size=args.batch_size
-        )
+        dataset = LargeGraphDataset(name=args.name, batch_size=args.batch_size)
     else:
         dataset = TUGraphDataset(
             name=args.name, batch_size=args.batch_size, seed=args.seed
@@ -254,12 +275,13 @@ if __name__ == "__main__":
         callbacks=[early_stopping, lr_monitor],
     )
 
-    if args.baseline:
-        backbone = GINModel(
+    if args.baseline is not None:
+        backbone = BaselineModel(
             input_dim=dataset.num_features,
             num_classes=dataset.num_classes,
             hidden_dim=args.hidden_dim,
             num_layers=args.num_steps,
+            baseline=args.baseline,
         )
     else:
         backbone = SimpleModel(
