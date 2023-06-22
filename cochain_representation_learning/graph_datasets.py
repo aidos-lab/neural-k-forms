@@ -32,6 +32,19 @@ def _get_labels(dataset):
     return labels
 
 
+class FixMultiClassLabels(BaseTransform):
+    def __call__(self, data):
+        """Adjust multi-class labels (reverse one-hot encoding)."""
+        label = data["y"]
+
+        if len(label.shape) > 1:
+            label = label.squeeze().tolist()
+            label = label.index(1.0)
+
+        data["y"] = torch.as_tensor([label])
+        return data
+
+
 class ConvertGraphToChains(BaseTransform):
     def __call__(self, data):
         """Convert graph into chains."""
