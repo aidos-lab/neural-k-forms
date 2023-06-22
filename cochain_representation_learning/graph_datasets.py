@@ -32,9 +32,29 @@ def _get_labels(dataset):
     return labels
 
 
-class FixMultiClassLabels(BaseTransform):
+def _get_class_ratios(dataset):
+    n_instances = len(dataset)
+
+    labels = _get_labels(dataset)
+    labels = [label.squeeze().tolist() for label in labels]
+    if isinstance(labels[0], list):
+        labels = [label.index(1.0) for label in labels]
+
+    ratios = np.bincount(labels).astype(float)
+    ratios /= n_instances
+
+    class_ratios = torch.tensor(ratios, dtype=torch.float32)
+    return class_ratios
+
+
+class OneHotDecoding(BaseTransform):
+
     def __call__(self, data):
-        """Adjust multi-class labels (reverse one-hot encoding)."""
+        """Adjust multi-class labels (reverse one-hot encoding).
+
+        This is necessary because some data sets use one-hot encoding
+        for their labels, wreaks havoc with some multi-class tasks.
+        """
         label = data["y"]
 
         if len(label.shape) > 1:
