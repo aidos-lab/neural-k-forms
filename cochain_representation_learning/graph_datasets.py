@@ -70,25 +70,12 @@ class ConvertGraphToChains(BaseTransform):
         node_features = data["x"]
         edge_index = data["edge_index"].T
 
-        # number of 1-simplices
         r = edge_index.shape[0]
-
-        # embedding dimension
         n = node_features.shape[1]
 
-        # sort the edge indices; we are converting this directly to
-        # a `numpy` array in order to speed up the calculation. The
-        # alternative construction triggers some warnings.
-        edges = torch.tensor(
-            np.asarray(
-                [
-                    np.sort([edge_index[i][0], edge_index[i][1]])
-                    for i in range(len(edge_index))
-                ]
-            )
-        )
-
-        # initialize chains
+        # Sort edge indices and prepare chains. We will subsequently
+        # fill them up.
+        edges, _ = torch.sort(edge_index, dim=1)
         chains = torch.zeros((r, 2, n))
 
         # turn edges into a 1-chain
@@ -98,31 +85,6 @@ class ConvertGraphToChains(BaseTransform):
 
         data["chains"] = chains
         return data
-
-
-def describe(dataset):
-    """Describe data set in textual form."""
-    print()
-    print(f"Dataset: {dataset}:")
-    print("====================")
-    print(f"Number of graphs: {len(dataset)}")
-    print(f"Number of features: {dataset.num_features}")
-    print(f"Number of classes: {dataset.num_classes}")
-
-    # Get the first graph object.
-    data = dataset[0]
-
-    print()
-    print(data)
-    print("=============================================================")
-
-    # Gather some statistics about the first graph.
-    print(f"Number of nodes: {data.num_nodes}")
-    print(f"Number of edges: {data.num_edges}")
-    print(f"Average node degree: {data.num_edges / data.num_nodes:.2f}")
-    print(f"Has isolated nodes: {data.has_isolated_nodes()}")
-    print(f"Has self-loops: {data.has_self_loops()}")
-    print(f"Is undirected: {data.is_undirected()}")
 
 
 class LongRangGraphDataset(pl.LightningDataModule):
@@ -191,7 +153,6 @@ class TUGraphDataset(pl.LightningDataModule):
         fold=0,
         seed=42,
         n_splits=5,
-        legacy=True,
         **kwargs,
     ):
         super().__init__()
