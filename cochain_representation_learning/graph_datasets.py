@@ -25,6 +25,7 @@ from torch.utils.data import Subset
 
 
 def _get_labels(dataset):
+    """Auxiliary function for returning labels of a data set."""
     labels = []
 
     for i in range(len(dataset)):
@@ -34,12 +35,11 @@ def _get_labels(dataset):
 
 
 def _get_class_ratios(dataset):
+    """Auxiliary function for calculating the class ratios of a data set."""
     n_instances = len(dataset)
 
     labels = _get_labels(dataset)
     labels = [label.squeeze().tolist() for label in labels]
-    if isinstance(labels[0], list):
-        labels = [label.index(1.0) for label in labels]
 
     ratios = np.bincount(labels).astype(float)
     ratios /= n_instances
