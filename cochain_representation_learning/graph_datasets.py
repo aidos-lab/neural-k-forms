@@ -186,30 +186,14 @@ class TUGraphDataset(pl.LightningDataModule):
         self.fold = fold
 
     def prepare_data(self):
-        # TODO: Make this smarter; we should support automated base
-        # class selection.
-        #
-        # TODO: Make splits configurable.
-        if self.name == "PATTERN" or self.name == "MNIST":
-            dataset = GNNBenchmarkDataset(
-                root=os.path.join(DATA_ROOT, "GNNB"),
-                name=self.name,
-                transform=self.transform,
-                pre_transform=self.pre_transform,
-            )
-        else:
-            # TODO (BR): Do we want to have cleaned versions of these data
-            # sets that include only non-isomorphic graphs?
-            cleaned = False
-
-            dataset = TUDataset(
-                root=os.path.join(DATA_ROOT, "TU"),
-                name=self.name,
-                cleaned=cleaned,
-                transform=self.transform,
-                use_node_attr=True,
-                pre_transform=self.pre_transform,
-            )
+        dataset = TUDataset(
+            root=os.path.join(DATA_ROOT, "TU"),
+            name=self.name,
+            cleaned=False,
+            transform=self.transform,
+            use_node_attr=True,
+            pre_transform=self.pre_transform,
+        )
 
         self.num_classes = dataset.num_classes
         self.num_features = dataset.num_features
