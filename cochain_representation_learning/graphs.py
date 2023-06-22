@@ -14,7 +14,7 @@ import pytorch_lightning as pl
 
 from cochain_representation_learning import generate_cochain_data_matrix
 
-from cochain_representation_learning.graph_datasets import LongRangGraphDataset
+from cochain_representation_learning.graph_datasets import LargeGraphDataset
 from cochain_representation_learning.graph_datasets import TUGraphDataset
 
 from torch_geometric.nn.models import GIN
@@ -207,8 +207,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.name == "Peptides-func":
-        dataset = LongRangGraphDataset(
+    if args.name in ["Peptides-func", "MNIST", "PATTERN"]:
+        dataset = LargeGraphDataset(
             name=args.name, batch_size=args.batch_size
         )
     else:

@@ -88,7 +88,7 @@ class ConvertGraphToChains(BaseTransform):
         return data
 
 
-class LongRangGraphDataset(pl.LightningDataModule):
+class LargeGraphDataset(pl.LightningDataModule):
     def __init__(
         self,
         name,
@@ -98,13 +98,27 @@ class LongRangGraphDataset(pl.LightningDataModule):
         self.name = name
         self.batch_size = batch_size
 
+        if name in ["MNIST", "PATTERN"]:
+            self.base_class = GNNBenchmarkDataset
+            self.transform = ConvertGraphToChains()
+            self.root = os.path.join(DATA_ROOT, "GNNB")
+        else:
+            self.base_class = LRGBDataset
+
+            # This is only required for the long-range graph benchmark
+            # data sets.
+            self.transform = Compose(
+                [OneHotDecoding(), ConvertGraphToChains()]
+            )
+            self.root = os.path.join(DATA_ROOT, "LRGB")
+
     def prepare_data(self):
         def _load_data(split):
-            dataset = LRGBDataset(
-                root=os.path.join(DATA_ROOT, "LRGB"),
+            dataset = self.base_class(
+                root=self.root,
                 name=self.name,
                 split=split,
-                transform=Compose([OneHotDecoding(), ConvertGraphToChains()]),
+                transform=self.transform,
             )
 
             return dataset
