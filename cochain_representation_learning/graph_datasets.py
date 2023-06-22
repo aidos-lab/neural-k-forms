@@ -19,6 +19,7 @@ from torch_geometric.datasets import LRGBDataset
 from torch_geometric.datasets import TUDataset
 
 from torch_geometric.transforms import BaseTransform
+from torch_geometric.transforms import Compose
 
 from torch.utils.data import Subset
 
@@ -103,8 +104,7 @@ class LongRangGraphDataset(pl.LightningDataModule):
                 root=os.path.join(DATA_ROOT, "LRGB"),
                 name=self.name,
                 split=split,
-                # TODO: Add chain conversion
-                transform=OneHotDecoding(),
+                transform=Compose([OneHotDecoding(), ConvertGraphToChains()]),
             )
 
             return dataset
