@@ -239,7 +239,7 @@ class ModelWrapper(pl.LightningModule):
         # TODO (BR): Make some of these parameters configurable.
         scheduler = {
             "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode="min", factor=0.1, patience=5
+                optimizer, mode="min", factor=0.1, patience=10
             ),
             "monitor": "val_loss",
             "frequency": 1,
