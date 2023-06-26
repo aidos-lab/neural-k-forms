@@ -144,7 +144,7 @@ class ModelWrapper(pl.LightningModule):
         super().__init__()
 
         self.backbone = backbone
-        self.loss_fn = nn.CrossEntropyLoss(weight=class_ratios)
+        self.loss_fn = nn.NLLLoss(weight=class_ratios)
 
         self.train_accuracy = tm.Accuracy(
             task="multiclass", num_classes=num_classes
