@@ -170,6 +170,7 @@ class ModelWrapper(pl.LightningModule):
             on_step=False,
             on_epoch=True,
             batch_size=len(batch),
+            prog_bar=prefix == "train",
         )
 
         self.log(
@@ -177,7 +178,7 @@ class ModelWrapper(pl.LightningModule):
             accuracy,
             on_step=False,
             on_epoch=True,
-            prog_bar=True,
+            prog_bar=prefix == "train",
             batch_size=len(batch),
         )
 
