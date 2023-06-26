@@ -156,13 +156,24 @@ class ModelWrapper(pl.LightningModule):
             task="multiclass", num_classes=num_classes
         )
 
-    def step(self, batch, batch_idx, prefix, accuracy):
+        self.train_average_precision = tm.AveragePrecision(
+            task="multiclass", num_classes=num_classes
+        )
+        self.validation_average_precision = tm.AveragePrecision(
+            task="multiclass", num_classes=num_classes
+        )
+        self.test_average_precision = tm.AveragePrecision(
+            task="multiclass", num_classes=num_classes
+        )
+
+    def step(self, batch, batch_idx, prefix, accuracy, average_precision):
         y = batch["y"]
 
         y_pred = self.backbone(batch)
         loss = self.loss_fn(y_pred, y)
 
         accuracy(torch.argmax(y_pred, -1), y)
+        average_precision(y_pred, y)
 
         self.log(
             f"{prefix}_loss",
@@ -182,16 +193,42 @@ class ModelWrapper(pl.LightningModule):
             batch_size=len(batch),
         )
 
+        self.log(
+            f"{prefix}_average_precision",
+            average_precision,
+            on_step=False,
+            on_epoch=True,
+            batch_size=len(batch),
+        )
+
         return loss
 
     def training_step(self, batch, batch_idx):
-        return self.step(batch, batch_idx, "train", self.train_accuracy)
+        return self.step(
+            batch,
+            batch_idx,
+            "train",
+            self.train_accuracy,
+            self.train_average_precision,
+        )
 
     def validation_step(self, batch, batch_idx):
-        return self.step(batch, batch_idx, "val", self.validation_accuracy)
+        return self.step(
+            batch,
+            batch_idx,
+            "val",
+            self.validation_accuracy,
+            self.validation_average_precision,
+        )
 
     def test_step(self, batch, batch_idx):
-        return self.step(batch, batch_idx, "test", self.test_accuracy)
+        return self.step(
+            batch,
+            batch_idx,
+            "test",
+            self.test_accuracy,
+            self.test_average_precision,
+        )
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.backbone.parameters(), lr=1e-3)
