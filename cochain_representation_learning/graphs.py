@@ -129,7 +129,7 @@ class BaselineModel(nn.Module):
         x = self.model(x, edge_index)
         x = global_add_pool(x, data.batch)
 
-        return nn.functional.softmax(x, dim=-1)
+        return nn.functional.log_softmax(x, dim=-1)
 
 
 class ModelWrapper(pl.LightningModule):
