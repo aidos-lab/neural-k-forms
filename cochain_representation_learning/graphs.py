@@ -279,6 +279,7 @@ if __name__ == "__main__":
 
     wandb_logger = pl.loggers.WandbLogger(
         name=args.name,
+        entity="aidos-labs",
         project="cochain-representation-learning",
         log_model=False,
         tags=["baseline"] if args.baseline else None,
