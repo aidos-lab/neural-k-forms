@@ -89,7 +89,7 @@ class ChainModel(nn.Module):
         all_features = self.batch_norm(all_features)
 
         pred = self.classifier(all_features)
-        pred = nn.functional.softmax(pred, -1)
+        pred = nn.functional.log_softmax(pred, -1)
 
         return pred
 
