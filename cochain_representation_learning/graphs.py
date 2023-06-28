@@ -29,7 +29,15 @@ class ChainModel(nn.Module):
 
     # TODO (BR): need to discuss the relevance of the respective channel
     # sizes; maybe we should also permit deeper MLPs?
-    def __init__(self, input_dim, num_classes, num_steps=5, hidden_dim=32):
+    def __init__(
+        self,
+        input_dim,
+        num_classes,
+        num_steps=5,
+        hidden_dim=32,
+        use_batch_norm=False,
+        use_attention=False,
+    ):
         super().__init__()
 
         output_dim = input_dim * num_steps
@@ -42,8 +50,11 @@ class ChainModel(nn.Module):
             nn.Linear(hidden_dim // 2, output_dim),
         )
 
-        self.attention = nn.MultiheadAttention(num_steps, 1)
-        self.batch_norm = nn.BatchNorm1d(num_steps)
+        self.attention = (
+            nn.MultiheadAttention(num_steps, 1) if use_attention else None
+        )
+
+        self.batch_norm = nn.BatchNorm1d(num_steps) if use_batch_norm else None
 
         self.classifier = nn.Sequential(
             nn.Linear(num_steps, hidden_dim),
@@ -73,7 +84,9 @@ class ChainModel(nn.Module):
             chains = x[edge_slices[i]:edge_slices[i + 1], :]  # fmt: skip
 
             X = generate_cochain_data_matrix(self.vector_field, chains)
-            X, _ = self.attention(X, X, X, need_weights=False)
+
+            if self.attention is not None:
+                X, _ = self.attention(X, X, X, need_weights=False)
 
             # orientation invariant square L2-norm readout function
             # TODO (BR): this is something we might want to change, no? If
@@ -86,7 +99,9 @@ class ChainModel(nn.Module):
             all_features.append(X)
 
         all_features = torch.stack(all_features)
-        all_features = self.batch_norm(all_features)
+
+        if self.batch_norm is not None:
+            all_features = self.batch_norm(all_features)
 
         pred = self.classifier(all_features)
         pred = nn.functional.log_softmax(pred, -1)
