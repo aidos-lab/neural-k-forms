@@ -35,7 +35,7 @@ class ChainModel(nn.Module):
         num_classes,
         num_steps=5,
         hidden_dim=32,
-        use_batch_norm=False,
+        use_batch_norm=True,
         use_attention=False,
     ):
         super().__init__()
