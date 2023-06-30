@@ -197,6 +197,7 @@ class ModelWrapper(pl.LightningModule):
 
         accuracy(torch.argmax(y_pred, -1), y)
         average_precision(y_pred, y)
+        auroc(y_pred, y)
 
         self.log(
             f"{prefix}_loss",
