@@ -16,12 +16,31 @@ from torch_geometric.data import DataLoader
 
 from torch_geometric.datasets import GNNBenchmarkDataset
 from torch_geometric.datasets import LRGBDataset
+from torch_geometric.datasets import ModelNet
+from torch_geometric.datasets import MoleculeNet
 from torch_geometric.datasets import TUDataset
 
 from torch_geometric.transforms import BaseTransform
 from torch_geometric.transforms import Compose
+from torch_geometric.transforms import FaceToEdge
 
 from torch.utils.data import Subset
+
+
+molecule_net_datasets = [
+    "BACE",
+    "BBBP",
+    "ClinTox",
+    "ESOL",
+    "FreeSolv",
+    "HIV",
+    "Lipophilicity",
+    "MUV",
+    "PCBA",
+    "SIDER",
+    "Tox21",
+    "ToxCast",
+]
 
 
 def _get_labels(dataset):
@@ -48,6 +67,13 @@ def _get_class_ratios(dataset):
     return class_ratios
 
 
+class ConvertToFloat(BaseTransform):
+    def __call__(self, data):
+        """Convert node feature data type to float."""
+        data["x"] = data["x"].to(dtype=torch.float)
+        return data
+
+
 class OneHotDecoding(BaseTransform):
     def __call__(self, data):
         """Adjust multi-class labels (reverse one-hot encoding).
@@ -59,9 +85,12 @@ class OneHotDecoding(BaseTransform):
 
         if len(label.shape) > 1:
             label = label.squeeze().tolist()
-            label = label.index(1.0)
 
-        data["y"] = torch.as_tensor([label])
+            if isinstance(label, list):
+                label = label.index(1.0)
+
+            data["y"] = torch.as_tensor([label], dtype=torch.long)
+
         return data
 
 
@@ -97,6 +126,7 @@ class LargeGraphDataset(pl.LightningDataModule):
         super().__init__()
         self.name = name
         self.batch_size = batch_size
+        self.pre_transform = None
 
         if name in ["MNIST", "PATTERN"]:
             self.base_class = GNNBenchmarkDataset
@@ -118,6 +148,7 @@ class LargeGraphDataset(pl.LightningDataModule):
                 root=self.root,
                 name=self.name,
                 split=split,
+                pre_transform=self.pre_transform,
                 transform=self.transform,
             )
 
@@ -185,13 +216,26 @@ class SmallGraphDataset(pl.LightningDataModule):
         self.n_splits = n_splits
         self.fold = fold
 
+        if name in ["ModelNet10", "ModelNet40"]:
+            self.base_class = ModelNet
+            self.root = os.path.join(DATA_ROOT, "ModelNet")
+            self.name = self.name[8:]
+            self.pre_transform = FaceToEdge()
+        elif name in molecule_net_datasets:
+            self.base_class = MoleculeNet
+            self.root = os.path.join(DATA_ROOT, "MoleculeNet")
+            self.transform = Compose(
+                [OneHotDecoding(), ConvertToFloat(), ConvertGraphToChains()]
+            )
+        else:
+            self.base_class = TUDataset
+            self.root = os.path.join(DATA_ROOT, "TU")
+
     def prepare_data(self):
-        dataset = TUDataset(
-            root=os.path.join(DATA_ROOT, "TU"),
+        dataset = self.base_class(
+            root=self.root,
             name=self.name,
-            cleaned=False,
             transform=self.transform,
-            use_node_attr=True,
             pre_transform=self.pre_transform,
         )
 
