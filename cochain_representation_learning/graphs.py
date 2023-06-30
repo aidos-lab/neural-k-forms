@@ -15,7 +15,7 @@ import pytorch_lightning as pl
 from cochain_representation_learning import generate_cochain_data_matrix
 
 from cochain_representation_learning.graph_datasets import LargeGraphDataset
-from cochain_representation_learning.graph_datasets import TUGraphDataset
+from cochain_representation_learning.graph_datasets import SmallGraphDataset
 
 from torch_geometric.nn.models import GAT
 from torch_geometric.nn.models import GCN
@@ -286,7 +286,7 @@ if __name__ == "__main__":
     if args.name in ["Peptides-func", "MNIST", "PATTERN"]:
         dataset = LargeGraphDataset(name=args.name, batch_size=args.batch_size)
     else:
-        dataset = TUGraphDataset(
+        dataset = SmallGraphDataset(
             name=args.name, batch_size=args.batch_size, seed=args.seed
         )
 

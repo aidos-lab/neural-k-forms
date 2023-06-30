@@ -157,7 +157,7 @@ class LargeGraphDataset(pl.LightningDataModule):
         )
 
 
-class TUGraphDataset(pl.LightningDataModule):
+class SmallGraphDataset(pl.LightningDataModule):
     def __init__(
         self,
         name,
