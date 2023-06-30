@@ -335,8 +335,8 @@ if __name__ == "__main__":
     wandb_logger.experiment.config.update(config)
 
     early_stopping = pl.callbacks.EarlyStopping(
-        monitor="val_accuracy",
-        mode="max",
+        monitor="val_loss",
+        mode="min",
         patience=40,
     )
 
