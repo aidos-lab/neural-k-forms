@@ -181,7 +181,15 @@ class ModelWrapper(pl.LightningModule):
             task="multiclass", num_classes=num_classes
         )
 
-    def step(self, batch, batch_idx, prefix, accuracy, average_precision):
+        self.train_auroc = tm.AUROC(task="multiclass", num_classes=num_classes)
+        self.validation_auroc = tm.AUROC(
+            task="multiclass", num_classes=num_classes
+        )
+        self.test_auroc = tm.AUROC(task="multiclass", num_classes=num_classes)
+
+    def step(
+        self, batch, batch_idx, prefix, accuracy, average_precision, auroc
+    ):
         y = batch["y"]
 
         y_pred = self.backbone(batch)
@@ -216,6 +224,14 @@ class ModelWrapper(pl.LightningModule):
             batch_size=len(batch),
         )
 
+        self.log(
+            f"{prefix}_auroc",
+            auroc,
+            on_step=False,
+            on_epoch=True,
+            batch_size=len(batch),
+        )
+
         return loss
 
     def training_step(self, batch, batch_idx):
@@ -225,6 +241,7 @@ class ModelWrapper(pl.LightningModule):
             "train",
             self.train_accuracy,
             self.train_average_precision,
+            self.train_auroc,
         )
 
     def validation_step(self, batch, batch_idx):
@@ -234,6 +251,7 @@ class ModelWrapper(pl.LightningModule):
             "val",
             self.validation_accuracy,
             self.validation_average_precision,
+            self.validation_auroc,
         )
 
     def test_step(self, batch, batch_idx):
@@ -243,6 +261,7 @@ class ModelWrapper(pl.LightningModule):
             "test",
             self.test_accuracy,
             self.test_average_precision,
+            self.test_auroc,
         )
 
     def configure_optimizers(self):
