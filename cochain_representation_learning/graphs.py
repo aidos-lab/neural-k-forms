@@ -142,7 +142,7 @@ class BaselineModel(nn.Module):
         x, edge_index = data.x, data.edge_index
 
         x = self.model(x, edge_index)
-        x = global_add_pool(x, data.batch)
+        x = global_add_pool(x, data.batch, size=len(data))
 
         return nn.functional.log_softmax(x, dim=-1)
 
