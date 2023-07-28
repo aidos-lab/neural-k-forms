@@ -24,6 +24,8 @@ from torch_geometric.transforms import BaseTransform
 from torch_geometric.transforms import Compose
 from torch_geometric.transforms import FaceToEdge
 
+from torch_geometric.utils import degree
+
 from torch.utils.data import Subset
 
 
@@ -65,6 +67,20 @@ def _get_class_ratios(dataset):
 
     class_ratios = torch.tensor(ratios, dtype=torch.float32)
     return class_ratios
+
+
+def _get_max_degree(dataset):
+    """Auxiliary function for getting the maximum degree of data set."""
+    max_degrees = torch.as_tensor(
+        [
+            torch.max(
+                degree(data.edge_index[0, :], data.num_nodes, dtype=torch.int)
+            )
+            for data in dataset
+        ]
+    )
+
+    return torch.max(max_degrees)
 
 
 class ConvertToFloat(BaseTransform):
@@ -241,6 +257,7 @@ class SmallGraphDataset(pl.LightningDataModule):
 
         self.num_classes = dataset.num_classes
         self.num_features = dataset.num_features
+        self.max_degree = _get_max_degree(dataset)
 
         n_instances = len(dataset)
         labels = _get_labels(dataset)
