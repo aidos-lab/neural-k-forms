@@ -23,6 +23,7 @@ from torch_geometric.datasets import TUDataset
 from torch_geometric.transforms import BaseTransform
 from torch_geometric.transforms import Compose
 from torch_geometric.transforms import FaceToEdge
+from torch_geometric.transforms import OneHotDegree
 
 from torch_geometric.utils import degree
 
@@ -69,20 +70,6 @@ def _get_class_ratios(dataset):
     return class_ratios
 
 
-def _get_max_degree(dataset):
-    """Auxiliary function for getting the maximum degree of data set."""
-    max_degrees = torch.as_tensor(
-        [
-            torch.max(
-                degree(data.edge_index[0, :], data.num_nodes, dtype=torch.int)
-            )
-            for data in dataset
-        ]
-    )
-
-    return torch.max(max_degrees)
-
-
 class ConvertToFloat(BaseTransform):
     def __call__(self, data):
         """Convert node feature data type to float."""
@@ -108,6 +95,19 @@ class OneHotDecoding(BaseTransform):
             data["y"] = torch.as_tensor([label], dtype=torch.long)
 
         return data
+
+
+class MaybeUseDegrees(BaseTransform):
+    def __init__(self, max_degree):
+        """Assign maximum degree."""
+        self.inner = OneHotDegree(max_degree)
+
+    def __call__(self, data):
+        """Assign degrees to data set if no node features exist."""
+        if "x" in data:
+            return data
+        else:
+            return self.inner(data)
 
 
 class ConvertGraphToChains(BaseTransform):
@@ -223,9 +223,6 @@ class SmallGraphDataset(pl.LightningDataModule):
         self.test_fraction = test_fraction
         self.seed = seed
 
-        # TODO (BR): We can use this to check whether the data set
-        # actually has some node attributes. If not, we can assign
-        # some based on the degrees, for instance.
         self.transform = ConvertGraphToChains()
         self.pre_transform = None
 
@@ -246,6 +243,31 @@ class SmallGraphDataset(pl.LightningDataModule):
         else:
             self.base_class = TUDataset
             self.root = os.path.join(DATA_ROOT, "TU")
+            self.transform = Compose(
+                [
+                    MaybeUseDegrees(self._get_max_degree()),
+                    ConvertGraphToChains(),
+                ]
+            )
+
+    def _get_max_degree(self):
+        """Auxiliary function for getting the maximum degree of data set."""
+        # This is *somewhat* wasteful since we have to peek briefly into
+        # the data set _before_ doing any other conversions.
+        dataset = self.base_class(root=self.root, name=self.name)
+
+        max_degrees = torch.as_tensor(
+            [
+                torch.max(
+                    degree(
+                        data.edge_index[0, :], data.num_nodes, dtype=torch.int
+                    )
+                )
+                for data in dataset
+            ]
+        )
+
+        return torch.max(max_degrees)
 
     def prepare_data(self):
         dataset = self.base_class(
@@ -257,7 +279,6 @@ class SmallGraphDataset(pl.LightningDataModule):
 
         self.num_classes = dataset.num_classes
         self.num_features = dataset.num_features
-        self.max_degree = _get_max_degree(dataset)
 
         n_instances = len(dataset)
         labels = _get_labels(dataset)
