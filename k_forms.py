@@ -12,8 +12,6 @@ import scipy.special
 # import the package for 3d plotting
 from mpl_toolkits.mplot3d import Axes3D
 
-## k-form integratiton functions: FILL INNN
-
 def subdivide_simplex_torch(n):
     # create a list of vertices
     vertices = []
@@ -34,10 +32,13 @@ def is_interior(point):
 # check if a point is striclty on the intetior one of the edges of a triangle with vertices (0,0), (1,0), (0,1)
 def is_edge(point):
     if point[0] == 0 and point[1] > 0 and point[1] < 1:
-        return True
-    elif point[0] == 1 and point[1] > 0 and point[1] < 1:
+        # vertical edges
         return True
     elif point[0] > 0 and point[0] < 1 and point[1] == 0:
+        # horizontal edge
+        return True
+    elif point[1] >0 and point[1] < 1 and point[0] >0 and point[0] < 1 and point[0] + point[1] == 1:
+        # diagonal edge
         return True
     else:
         return False
@@ -53,134 +54,136 @@ def is_vertex(point):
     else:
         return False
     
-def sum_points(n, g):
-    """ sums the values of g over all vertives in the subdivided simplex"""
-    val = 0
-    vertices = subdivide_simplex_torch(n)
-    for pt in vertices:
-        if is_interior(pt):
-            val += 6 * g(pt)
-        if is_edge(pt):
-            val += 3 * g(pt)
-        if is_vertex(pt):
-            val += g(pt)
+def coef_vertex(v): 
+    if is_interior(v):
+        return torch.tensor([6]).float()
+        #return 6
+    if is_edge(v):
+        return torch.tensor([3]).float()
+        #return 3
+    if is_vertex(v):
+        return torch.tensor([1]).float()
+        #return 1
 
-    vol = 1/(2*(n**2))
-    num_triangles = n**2 
-    return  (val* vol )/num_triangles
+def subdivide_simplex_coef_torch(n):
+    # create a list of vertices
+    vertices = []
+    for i in range(n+1):
+        for j in range(n+1-i):
+            vertices.append([i/n,j/n])
+    vertices = torch.tensor(vertices)
+
+    coefs = []
+    for i in range(len(vertices)):
+        coefs.append(coef_vertex(vertices[i]))
+
+    return vertices, coefs
 
 
-def build_PHI(phi): 
-    """Input: phi an array containing the embedding values of the vertices of a simplex
-    Output: PHI a linear map that can map all points inside a simplex into the embedding space """
-    PHI = torch.zeros((phi.shape[0]-1, phi.shape[1]))
-    for i in range(1,phi.shape[0]):
-        PHI[i-1] = phi[i] - phi[0]
-    #return transpose of PHI
-    return PHI.transpose(0,1)
 
-def build_big_deter_tensor(n, k =2):
+def phi_b(embedded_vertices):
+    """build the affine transforamtion matrix that corresponds to the embedded vertices"""
+    dim = embedded_vertices.shape[1] ### check this
+    #print(dim)
+    a = [embedded_vertices[i] - embedded_vertices[0] for i in range(1,3)]
+    phi = torch.stack(a)
+    b = embedded_vertices[0] 
+    ## should we return the transpose of phi and b?
+    return phi.float(), b.float()
+
+def build_determinant_tensor(dim, k =2):
     """Input: n the number of subdivision of the simplex
             k the dimension of the simplex, default is 2 for now 
         Output: Tensors of size (n choose k) x n x n that can be used to compute the determinant entering in the integration formuala
         of  k-form over an embedded simplex
     """
-    N = int(scipy.special.binom(n,k))
-    deter_tensor = torch.zeros(N, n, n)
+    ### Can this be writen in a more efficient way? i.e. without using a for loop
+    
+    N = int(scipy.special.binom(dim,k))
+    deter_tensor = torch.zeros(N, dim, dim)
     ind = 0
-    for i in range(n):
-        for j in range(i+1,n):
+    for i in range(dim):
+        for j in range(i+1,dim):
             # each tensor is a nxn matrix with (i,j)-coordinate equal to 1 and (j,i)-coordinate equal to -1
             deter_tensor[ind,i,j] = torch.tensor(1)
             deter_tensor[ind,j,i] = torch.tensor(-1)
             ind += 1
 
-    return deter_tensor
+    return deter_tensor.float()
 
-def g(p, kform, phi, deter_tensor):
-    """Input: p a point in the simplex, 
-              kform: a NN of the k-form to integrate 
-              phi: an array containing the embedding values of the vertices of a simplex
-              deter_tensor: a tensor of size (n choose k) x n x n that can be used to compute the determinant entering in the integration formuala
-              of  k-form over an embedded simplex
-        Output: the coefficients of the k-form evaluated at p
-              """
-    PHI = build_PHI(phi)
-    p_emb = PHI @ p
-    k_form_val = kform(p_emb)
 
-    # make a vector containing all values of det 
-    det = torch.zeros(deter_tensor.shape[0])
-
-    for i in range(deter_tensor.shape[0]):
-        #det = PHI[0].transpose(0,1) @ deter_tensor[i] @ PHI[1]
-        #print(PHI[:,0].unsqueeze(1).transpose(0,1).shape)
-        #print(deter_tensor[i].shape)
-        #print(PHI[:,1].unsqueeze(1).shape)
-        det[i] = torch.matmul(torch.matmul(PHI[:,0].unsqueeze(1).transpose(0,1), deter_tensor[i]), PHI[:,1].unsqueeze(1))
-
-    g_val = k_form_val * det
-    g_p = torch.sum(g_val)
-    return g_p
-
-def integral_simplex(kform, phi, deter_tensor, n):
-    """Input: kform: a NN of the k-form to integrate
-                phi: an array containing the embedding values of the vertices of a simplex
-                deter_tensor: a tensor of size (n choose k) x n x n that can be used to compute the determinant entering in the integration formuala
-                of  k-form over an embedded simplex
-                n: the number of subdivision of the simplex
-                pt: a point in the simplex ## why??
-        Output: the integral of the k-form over the simplex
+def integrate_kform(kform, phi, b, det, subdivision_vert, subdivision_coefs, num_sub, dim = 3, k = 2):
+                    
+    """ Integrate a $2$-form over $2$-simplex
+    Input: 
+        kform: a 2-form
+        phi: a matrix containing the embedding of the vertices of the simplex in R^dim
+        b: a vector containing the embedding of the basepoint of the simplex in R^dim
+        det: the tensor computed by build_determinant_tensor
+        dim: the dimension of the embedding space
+        k: the dimension of the form
+        subdivision_vert: a list of vertices of the subdivision of the simplex
+        subdivision_coefs: a list of coefficients for the contribution of each vertex to the integral
+        num_sub: the number of subdivisions of the simplex 
+    Output:
+        integral: the value of integral of the 2-form over the 2-simplex 
     """
-    vertices = subdivide_simplex_torch(n)
-    val = 0
-    # compute g at each vertex
-    for pt in vertices:
-        if is_interior(pt):
-            cof = 6
-        elif is_edge(pt):
-            cof = 3
-        else: 
-            cof = 1
 
-        val += cof * g(pt, kform, phi, deter_tensor)
+    ## TODO: add assert to check inputs are good 
 
-    vol = 1/(2*(n**2))
+   
+    num_simplices = int(num_sub**2)
+    integral = torch.tensor([0]).float()
 
-    num_triangles = n**2 
+    N = int(scipy.special.binom(dim,k))
 
-    return  (val* vol )/num_triangles
+    for i in range(len(subdivision_vert)): ## This is the slow part  
+        p = subdivision_vert[i]
+        phi_p = phi.T @ p + b
+        g_p = torch.tensor([0]).float() 
+        for ind in range(N):
+            g_p+= kform(phi_p)[ind] * torch.matmul(torch.matmul(phi[0], det[ind]), phi[1].T)
+        cof = subdivision_coefs[i]
+        integral += torch.mul(g_p,cof)
 
-def integral_SC(kform, phi, simplices, dim, num_sub):
-    """Input: kform: a NN of the k-form to integrate
-                phi: an array containing the embedding values of the vertices of the complex
-                simplices: a list of k-simplices in the complex
-                dim: the embedding dimension 
-                num_sub: the number of subdivision of each simplex
-        Output: the integral of the k-form over the simplicial complex """
+    vol = torch.tensor([1/(2*(num_sub**2))]).float() ## I'm not sure we need this but double check the theory 
+    return ((integral* vol )/num_simplices).float()
 
-    deter_tensor = build_big_deter_tensor(dim,2)
-    #print(deter_tensor) 
-    val = 0
-    vertices = subdivide_simplex_torch(num_sub)
-    for simplex in simplices:
-        phi_simplex = torch.zeros((len(simplex), dim))
-        phi_simplex = phi[torch.tensor(simplex)]
-        #print(phi_simplex)
-        for v in vertices:
-            val += integral_simplex(kform, phi_simplex, deter_tensor, num_sub, v)
-    return val
 
-def form2cochain(kform, phi, simplices, dim, num_sub): 
-    cochain = torch.zeros(len(simplices))
-    deter_tensor = build_big_deter_tensor(dim,2) ## maybe this computation can be done outside the function 
-    for i in range(len(simplices)):
-        simplex = simplices[i]
-        phi_simplex = torch.zeros((len(simplex), dim))
-        phi_simplex = phi[torch.tensor(simplex)]
-        cochain[i] = integral_simplex(kform, phi_simplex, deter_tensor, num_sub)
+def form2cochain(kform, surface_dict, deter_tensor,subivision_vert, subdivision_coeffs, num_sub, dim =3 ,k = 2): 
+
+    """From a 2-form we get a 2-cochain by integrating the form over every 2-simplex in the simplicial complex
+    Input:
+        kform: a 2-form
+        surface_dict: a dictionary containing all of the information of the triangulated surface in R^dim
+        deter_tensor: the tensor computed by build_determinant_tensor
+        dim: the dimension of the embedding space
+        k: the dimension of the form
+        subivision_vert: a list of vertices of the subdivision of the simplex
+        subdivision_coefs: a list of coefficients for the contribution of each vertex to the integral
+    
+    Output:
+        cochain: a 2-cochain, torch tensor of shape FILL IN!!!!
+     """
+
+    Emb_comp = surface_dict['points']
+    assert Emb_comp.shape[1] == dim, "The dimension of the embedding space is not equal to the number of columns of the matrix Emb_comp"
+
+    cochain = torch.zeros(len(surface_dict['simplices']))
+    for i in range(len(surface_dict['simplices'])):
+     
+        phi_simplex = surface_dict['Phi'][i]
+        b_simplex = surface_dict['b'][i]
+        cochain[i] = integrate_kform(kform, phi_simplex, b_simplex, deter_tensor, subivision_vert, subdivision_coeffs, dim, k)
 
     return cochain
+
+
+
+
+
+
+
 
 
 ########### SURFACE GENERATION #########
