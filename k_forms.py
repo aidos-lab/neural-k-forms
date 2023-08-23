@@ -178,19 +178,11 @@ def form2cochain(kform, surface_dict, deter_tensor,subivision_vert, subdivision_
 
     return cochain
 
-
-
-
-
-
-
-
-
 ########### SURFACE GENERATION #########
 
 ## generating random surfaces in 3D  
 def random_surface_yz(n, eps = 0.1):
-
+    np.random.seed(seed)
     x = np.sort(np.random.uniform(-10, 10, n))
     y = np.sort(np.random.uniform(-10, 10, n))
     Eps = np.random.uniform(-eps,eps, n)    
@@ -217,7 +209,7 @@ def random_surface_xz(n, eps = 0.1):
 
     return X, Y, Z, ar
 
-def random_curved_surface(n, eps = 0.1): 
+def random_curved_surface(n, eps = 0.1):
 
     x = np.sort(np.random.uniform(-10, 10, n))
     y = np.sort(np.random.uniform(-10, 10, n))
