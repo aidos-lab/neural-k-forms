@@ -178,11 +178,79 @@ def form2cochain(kform, surface_dict, deter_tensor,subivision_vert, subdivision_
 
     return cochain
 
+#### multiple cocycle functions
+
+def integrate_kforms(kform, phi, b, det, subdivision_vert, subdivision_coefs, num_sub, l =1, dim = 3, k = 2):
+    """ Integrate l 2-forms over 2-simplex
+    Input: 
+        kform: l 2-forms
+        phi: a matrix containing the embedding of the vertices of the simplex in R^dim
+        b: a vector containing the embedding of the basepoint of the simplex in R^dim
+        det: the tensor computed by build_determinant_tensor
+        l: the number of 2-forms to integrate
+        dim: the dimension of the embedding space
+        k: the dimension of the form
+        subdivision_vert: a list of vertices of the subdivision of the simplex
+        subdivision_coefs: a list of coefficients for the contribution of each vertex to the integral
+        num_sub: the number of subdivisions of the simplex 
+    Output:
+        integral: the value of integral of the l 2-forms over the 2-simplex 
+    """
+
+    ## TODO: add assert to check inputs 
+    ## check  that l and the shape of the k-form are consistent
+
+    ## number of vertices in the subdivision
+    num_simplices = int(num_sub**2) ## number of simplices in the subdivision
+
+    N = int(scipy.special.binom(dim,k))
+
+    integrals = torch.zeros(l,1) 
+
+    for i in range(l):
+        ## integrate the i-th k-form
+        for j in range(len(subdivision_vert)): 
+            p = subdivision_vert[j]
+            phi_p = phi.T @ p + b
+            g_p = torch.tensor([0]).float() 
+            for ind in range(i*N, (i+1)*N):
+                m = ind - i*N
+                #print('m:',m)
+                #print('ind: ',ind)
+                #print('kform: ',kform(phi_p)[ind])
+                
+                g_p+= kform(phi_p)[ind] * torch.matmul(torch.matmul(phi[0], det[m]), phi[1].T)
+            
+            cof = subdivision_coefs[j]
+
+
+            integrals[i] += torch.mul(g_p,cof)
+
+        vol = torch.tensor([1/(2*(num_sub**2))]).float()
+        
+    return   ((vol/num_simplices)*integrals).float()
+
+def forms2cochains(kform,surface_dict, deter_tensor, subdivision_vert, subdivision_coef, num_sub, l = 1, dim = 3, k = 2):
+    Emb_comp = surface_dict['points']
+
+    assert Emb_comp.shape[1] == dim, "The dimension of the embedding space is not equal to the number of columns of the matrix Emb_comp"
+    
+    cochains = torch.zeros(len(surface_dict['simplices']),l)   
+    
+    #deter_tensor = build_determinant_tensor(dim, k)
+    for i in range(len(surface_dict['simplices'])):
+       
+        phi_simplex = surface_dict['Phi'][i]
+        b_simplex = surface_dict['b'][i]
+        cochains[i] = integrate_kforms(kform, phi_simplex, b_simplex,deter_tensor, subdivision_vert, subdivision_coef, num_sub, l, dim, k)[:,0].float()
+    return cochains.float()
+
+
+
 ########### SURFACE GENERATION #########
 
 ## generating random surfaces in 3D  
 def random_surface_yz(n, eps = 0.1):
-    np.random.seed(seed)
     x = np.sort(np.random.uniform(-10, 10, n))
     y = np.sort(np.random.uniform(-10, 10, n))
     Eps = np.random.uniform(-eps,eps, n)    
