@@ -1,5 +1,6 @@
 """Handling graph data sets with `pytorch-lightning`."""
 
+import inspect
 import itertools
 import os
 import torch
@@ -270,12 +271,23 @@ class SmallGraphDataset(pl.LightningDataModule):
         return torch.max(max_degrees)
 
     def prepare_data(self):
-        dataset = self.base_class(
-            root=self.root,
-            name=self.name,
-            transform=self.transform,
-            pre_transform=self.pre_transform,
-        )
+        # Prepare parameters for the base class. This is somewhat
+        # tedious because the `use_node_attr` is not available in
+        # all base classes.
+        args = {
+            "root": self.root,
+            "name": self.name,
+            "transform": self.transform,
+            "pre_transform": self.pre_transform
+        }
+
+        if (
+            "use_node_attr"
+            in inspect.signature(self.base_class.__init__).parameters
+        ):
+            args["use_node_attr"] = True
+
+        dataset = self.base_class(**args)
 
         self.num_classes = dataset.num_classes
         self.num_features = dataset.num_features
