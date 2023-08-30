@@ -229,12 +229,12 @@ class SmallGraphDataset(pl.LightningDataModule):
         self.n_splits = n_splits
         self.fold = fold
 
-        if name in ["ModelNet10", "ModelNet40"]:
+        if self.name in ["ModelNet10", "ModelNet40"]:
             self.base_class = ModelNet
             self.root = os.path.join(DATA_ROOT, "ModelNet")
             self.name = self.name[8:]
             self.pre_transform = FaceToEdge()
-        elif name in molecule_net_datasets:
+        elif self.name in molecule_net_datasets:
             self.base_class = MoleculeNet
             self.root = os.path.join(DATA_ROOT, "MoleculeNet")
             self.transform = Compose(
