@@ -18,9 +18,4 @@ if __name__ == "__main__":
     df = df.drop(columns_to_drop, axis="columns")
     df["test_accuracy"] *= 100.0
 
-    for dataset in sorted(df["dataset"].unique()):
-        df_ = df.query("@dataset == dataset")
-        df_ = df_.drop("dataset", axis="columns")
-
-        print(f"DATASET: {dataset}")
-        print(df_.groupby(["model"]).agg(["mean", "std"]).round(2).T)
+    print(df.groupby(["dataset", "model"]).agg(["mean", "std"]).round(2))
