@@ -300,6 +300,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--batch-size", type=int, default=32)
     parser.add_argument("-H", "--hidden-dim", type=int, default=32)
     parser.add_argument("-n", "--name", type=str, default="AIDS")
+    parser.add_argument("-t", "--tag", type=str)
 
     args = parser.parse_args()
 
@@ -307,17 +308,24 @@ if __name__ == "__main__":
         dataset = LargeGraphDataset(name=args.name, batch_size=args.batch_size)
     else:
         dataset = SmallGraphDataset(
-            name=args.name, batch_size=args.batch_size, seed=args.seed
+            name=args.name,
+            batch_size=args.batch_size,
+            seed=args.seed,
+            fold=args.fold,
         )
 
     dataset.prepare_data()
+
+    tags = [args.tag] if args.tag is not None else []
+    if args.baseline:
+        tags.append("baseline")
 
     wandb_logger = pl.loggers.WandbLogger(
         name=args.name,
         entity="aidos-labs",
         project="cochain-representation-learning",
         log_model=False,
-        tags=["baseline"] if args.baseline else None,
+        tags=tags,
     )
 
     # Store the configuration in the logger so that we can make
