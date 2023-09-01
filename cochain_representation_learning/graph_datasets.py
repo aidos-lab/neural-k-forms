@@ -155,7 +155,7 @@ class LargeGraphDataset(pl.LightningDataModule):
             # This is only required for the long-range graph benchmark
             # data sets.
             self.transform = Compose(
-                [OneHotDecoding(), ConvertGraphToChains()]
+                [OneHotDecoding(), ConvertToFloat(), ConvertGraphToChains()]
             )
             self.root = os.path.join(DATA_ROOT, "LRGB")
 
