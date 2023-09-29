@@ -11,6 +11,9 @@ import scipy.special
 from sklearn.decomposition import PCA
 import pandas as pd
 
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import matplotlib.tri as mtri
+
 ###Plotting Function
 def get_positions(points,simplices):
     polygons = list()
@@ -23,11 +26,11 @@ def get_positions(points,simplices):
 
 
 
-def value2color(values):
-    
+def value2color(val):
+    values = val.copy()
     values -= values.min()
     values = values/(values.max()-values.min()) # get values between 0 and 1 !! maybe when we want to compare cochains this is not the best 
-    return mpl.cm.viridis(values)
+    return mpl.cm.bwr(values)
 
 
 
@@ -35,7 +38,7 @@ def value2color_all(val, min_val, max_val):
     value = val.copy()
     value -= min_val
     value = value/(max_val-min_val) 
-    return mpl.cm.viridis(value)
+    return mpl.cm.bwr(value)
 
 
 
@@ -119,7 +122,7 @@ def plot_comparison_cochains_indices(cochains, points, simplices, ac, indices0, 
 
 
 
-def plot_pca_kform(cochains, labels, n_components, view = None): 
+def plot_pca_kform(cochains, labels, n_components, title = None, view = None, save = False, save_path = None): 
 
     if n_components == 2: 
         pca = PCA(n_components=2)
@@ -132,12 +135,25 @@ def plot_pca_kform(cochains, labels, n_components, view = None):
         # plot the principal components
         fig, ax = plt.subplots()
         scatter = ax.scatter(principalDf['principal component 1'], principalDf['principal component 2'], c=principalDf['labels'])
-        ax.set_title('PCA of the cochains')
+        if title != None: 
+            ax.set_title(title)
+        else:
+            ax.set_title('PCA of the cochains')
+
         ax.set_xlabel('Principal Component 1')
         ax.set_ylabel('Principal Component 2')
         legend1 = ax.legend(*scatter.legend_elements(), loc="upper left", title="Classes")
 
+        if save == True:
+            if save_path == None:
+                plt.savefig('pca_kform.png')
+            else: 
+                plt.savefig(save_path)
+
+
+
         plt.show()
+
 
     if n_components == 3:
 
@@ -153,7 +169,12 @@ def plot_pca_kform(cochains, labels, n_components, view = None):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.scatter(principalDf['principal component 1'], principalDf['principal component 2'], principalDf['principal component 3'], c=principalDf['labels'], alpha = 0.7)
-        ax.set_title('PCA of the cochains')
+        
+        if title != None: 
+            ax.set_title(title)
+        else:
+            ax.set_title('PCA of the cochains')
+            
         ax.set_xlabel('Principal Component 1')
         ax.set_ylabel('Principal Component 2')
         ax.set_zlabel('Principal Component 3')
@@ -161,7 +182,66 @@ def plot_pca_kform(cochains, labels, n_components, view = None):
         if view != None:
             ax.view_init(view[0], view[1])
 
+        if save == True:
+            if save_path == None:
+                plt.savefig('pca_kform.png')
+            else: 
+                plt.savefig(save_path)
         plt.show()
 
 
 
+
+def plot_surface_cochain(surface, color, simplices, edges, title = None, view = None): 
+
+    sx = surface['points'][:,0].reshape(7,7)
+    sy = surface['points'][:,1].reshape(7,7)
+    sz = surface['points'][:,2].reshape(7,7)
+
+    # plot the surface
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    for i in range(len(simplices)): 
+        simplex = simplices[i]
+        pts = surface['points'][simplex]
+        x = pts[:,0]
+        y = pts[:,1]
+        z = pts[:,2]
+
+        tri = mtri.Triangulation(x, y)
+        ax.plot_trisurf(x, y, z, triangles=tri.triangles, color =list(color[i])[:3], alpha = 0.9)
+
+    
+    for e in edges: 
+        pts = surface['points'][e]
+        pt1 = np.array(pts[0])
+        pt2 = np.array(pts[1])
+        # plot the edge from the points
+        ax.plot([pt1[0], pt2[0]], [pt1[1], pt2[1]], [pt1[2], pt2[2]], 'k', alpha = 0.9)
+
+    # add the colorbar
+    norm = mpl.colors.Normalize(vmin=color.min(), vmax=color.max())
+    sm = plt.cm.ScalarMappable(cmap=mpl.cm.bwr, norm = norm)
+    sm.set_array([])
+    fig.colorbar(sm)
+
+
+    # set axis labels
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+
+
+    if view is not None: 
+        ax.view_init(view[0], view[1])
+    else:
+        ax.view_init(60,10)
+
+    if title is not None: 
+        ax.set_title(title)
+    else: 
+        ax.set_title('Surface plot')
+   
+
+    

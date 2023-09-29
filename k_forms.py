@@ -261,6 +261,7 @@ def random_surface_yz(n, eps = 0.1):
     ar = torch.from_numpy(ar)
     return X, Y, Z, ar
 
+
 def random_surface_xz(n, eps = 0.1):
 
     x = np.sort(np.random.uniform(-10, 10, n))
@@ -323,13 +324,13 @@ def plot_surface(X,Y,Z):
     #ax.view_init(60, 35)
     ax.view_init(40, 60)
     plt.show()
-    # plot the contour in a plot that I can rotate
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    ax.contour3D(X, Y, Z, 50, cmap='viridis')
-    ax.set_title('Contour plot')
-    ax.view_init(60, 35)
-    plt.show()
+    
+    #fig = plt.figure()
+    #ax = fig.gca(projection='3d')
+    #ax.contour3D(X, Y, Z, 50, cmap='viridis')
+    #ax.set_title('Contour plot')
+    #ax.view_init(60, 35)
+    #plt.show()
     
     return None
         
@@ -359,3 +360,54 @@ def plot_unit_square_grid(n=3):
             plt.plot(pts[s[0], 0], pts[s[0], 1], 'r-')
     return pts, ac
 
+
+def random_surface_sin_x(n, scale = 1, period = 1, eps = 0.3):
+    trans_x = np.random.uniform(-10, 10, 1)
+    trans_y = np.random.uniform(-10, 10, 1)
+    x = np.arange(0, n, 1)/scale + trans_x
+    y = np.arange(0, n, 1)/scale + trans_y
+    Eps = np.random.uniform(-eps,eps, (n,n))    
+    X, Y = np.meshgrid(x, y)
+    Z = np.zeros(X.shape)
+
+    for i in range(X.shape[0]):
+        for j in range(X.shape[1]):
+            Z[i,j] = math.sin(X[i,j]/period) 
+            # return an array of points
+    Z = Z + Eps     
+    ar = np.array([X.flatten(), Y.flatten(), Z.flatten()]).T
+    ar = torch.from_numpy(ar)
+
+    return X, Y, Z, ar
+
+def random_surface_sin_y(n, scale =1, period =1, eps = 0.3):
+    trans_x = np.random.uniform(-10, 10, 1)
+    trans_y = np.random.uniform(-10, 10, 1)
+    x = np.arange(0, n, 1)/scale + trans_x
+    y = np.arange(0, n, 1)/scale + trans_y
+    Eps = np.random.uniform(-eps,eps, n)    
+    X, Y = np.meshgrid(x, y)
+    Z = np.zeros(X.shape)
+
+    for i in range(X.shape[0]):
+        for j in range(X.shape[1]):
+            Z[i,j] = math.sin(Y[i,j]/period) 
+            # return an array of points
+    Z = Z + Eps      
+    ar = np.array([X.flatten(), Y.flatten(), Z.flatten()]).T
+    ar = torch.from_numpy(ar)
+
+    return X, Y, Z, ar
+
+
+def generate_surfaces_sin_x(num_surf, n_pts, scale =1, period =1, eps = 0.3): 
+    surfaces = []
+    for i in range(num_surf):
+        surfaces.append(random_surface_sin_x(n_pts, scale = scale, period = period, eps = eps))
+    return surfaces
+
+def generate_surfaces_sin_y(num_surf, n_pts, scale =1, period =1, eps = 0.3): 
+    surfaces = []
+    for i in range(num_surf):
+        surfaces.append(random_surface_sin_y(n_pts, scale = scale, period = period, eps = eps))
+    return surfaces
