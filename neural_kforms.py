@@ -129,10 +129,10 @@ def discretize_chain(chain,d):
     return d_chain
 
 
-# a function for turning a chain into a cochain data matrix
-def gen_CDM(vf,chain, d = 5):
+# a function for turning a chain into an integration matrix
+def integration_matrix(vf,chain, d = 5):
     """
-    A function for generating a cochain data matrix from a chain and a vector field
+    A function for generating a integration matrix from a chain and a vector field
 
     Parameters
     ----------
@@ -140,7 +140,7 @@ def gen_CDM(vf,chain, d = 5):
         The vector field to be applied to the chain
     
     chain : a torch tensor of shape (r,2,n)
-        The chain to be turned into a cochain data matrix
+        The chain to be turned into an integration matrix
 
     d : int
         The number of discrete steps in the discretization of the chain
@@ -148,7 +148,7 @@ def gen_CDM(vf,chain, d = 5):
     Returns
     -------
     out : a torch tensor of shape (r,c)
-        The cochain data matrix
+        The integration matrix
     """
 
     
@@ -164,7 +164,7 @@ def gen_CDM(vf,chain, d = 5):
     # dimension of ambient space
     n = chain.shape[2]
 
-    # number of feature-cochains in the cochain data matrix
+    # number of feature-cochains in the integration matrix
     c = int(vf[-1].out_features / n)
 
     # apply the vector field to the discretized chain
@@ -304,7 +304,40 @@ def extract_simplices(simplex_tree):
     return simplices
 
 
+# a function for turning a path into a chain
+def one_skeleton_to_chain(one_simplices, points):
+    """  
+    A function for turning a 1-skeleton into a chain
 
+    Parameters
+    ----------
+    p : numpy array
+        A set of 1-simplices extracted from the Gudhi simplex tree
+
+    points : numpy array
+        A set of vertices corresponding to the embedding
+
+    Returns
+    -------
+    chain : numpy array
+        A chain in R^n, represented as a numpy array of shape (p-1,2,n), where p is the number of points in the path.
+        The middle index corresponds to start and endpoints of the edges in the chain.
+    """
+
+    r = len(one_simplices)
+
+    n = points[0].shape[0]
+    
+    
+    chain = torch.zeros((r,2,n))
+
+    for i in range(r):
+
+        chain[i,0,:] = torch.tensor(points[one_simplices[i][0]])
+        chain[i,1,:] = torch.tensor(points[one_simplices[i][1]])
+    
+
+    return chain
 
 # Build the boundary operators
 def build_boundaries(simplices):
