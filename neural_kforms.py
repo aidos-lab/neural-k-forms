@@ -4,8 +4,9 @@ import torch
 import torch.nn as nn
 from matplotlib import pyplot as plt
 from matplotlib import colors as mcolors
-import math
+import math 
 
+import scipy 
 
 # for building the boundary matrices
 import gudhi as gd
@@ -410,7 +411,7 @@ def plot_unit_square_grid(n=3):
     return pts, ac
 
 
-def random_surface_sin_x(n, scale = 1, period = 1, eps = 0.3):
+def random_surface_sin_x(n, scale = 1, period = 1, eps = 0.1):
     trans_x = np.random.uniform(-10, 10, 1)
     trans_y = np.random.uniform(-10, 10, 1)
     x = np.arange(0, n, 1)/scale + trans_x
@@ -429,7 +430,7 @@ def random_surface_sin_x(n, scale = 1, period = 1, eps = 0.3):
 
     return X, Y, Z, ar
 
-def random_surface_sin_y(n, scale =1, period =1, eps = 0.3):
+def random_surface_sin_y(n, scale =1, period =1, eps = 0.1):
     trans_x = np.random.uniform(-10, 10, 1)
     trans_y = np.random.uniform(-10, 10, 1)
     x = np.arange(0, n, 1)/scale + trans_x
@@ -449,13 +450,13 @@ def random_surface_sin_y(n, scale =1, period =1, eps = 0.3):
     return X, Y, Z, ar
 
 
-def generate_surfaces_sin_x(num_surf, n_pts, scale =1, period =1, eps = 0.3): 
+def generate_surfaces_sin_x(num_surf, n_pts, scale =1, period =1, eps = 0.1): 
     surfaces = []
     for i in range(num_surf):
         surfaces.append(random_surface_sin_x(n_pts, scale = scale, period = period, eps = eps))
     return surfaces
 
-def generate_surfaces_sin_y(num_surf, n_pts, scale =1, period =1, eps = 0.3): 
+def generate_surfaces_sin_y(num_surf, n_pts, scale =1, period =1, eps = 0.1): 
     surfaces = []
     for i in range(num_surf):
         surfaces.append(random_surface_sin_y(n_pts, scale = scale, period = period, eps = eps))
