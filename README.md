@@ -1,4 +1,4 @@
-# Simplicial Representation Learning with Neural $k$-forms 
+# Simplicial Representation Learning with Neural k-forms 
 
 This repository contains the code for the paper [Simplicial Representation Learning with Neural $k$-Forms]
 
@@ -6,7 +6,7 @@ Geometric deep learning extends deep learning to incorporate information about t
 
 
 <p align="center">
-   <img src="./figures/pipeline.pdf">
+   <img src="./figures/pipeline.png">
 </p>
 
 
