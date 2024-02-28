@@ -1,4 +1,7 @@
-"""EGNN implementation.
+"""Contains specific implementation of baseline models.
+
+EGNN
+====
 
 This code was originally authored by Arsenii Senya Ashukha and was taken
 from his GitHub repository.
