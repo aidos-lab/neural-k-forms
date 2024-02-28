@@ -65,37 +65,6 @@ def plot_component_vf(f, ax, comp = 0, x_range=5, y_range=5):
     ax.quiver(X,Y,U,V)
 
 
-
-# a function for turning a path into a chain
-def path_to_chain(p):
-    """  
-    A function for turning a path into a chain
-
-    Parameters
-    ----------
-    p : numpy array
-        A path in R^n, represented as a numpy array of shape (p,n), where p is the number of points in the path
-
-    Returns
-    -------
-    chain : numpy array
-        A chain in R^n, represented as a numpy array of shape (p-1,2,n), where p is the number of points in the path.
-        The middle index corresponds to start and endpoints of the edges in the chain.
-    """
-
-    r = len(p) - 1
-
-    n = p[0].shape[0]
-    
-    
-    chain = torch.zeros((r,2,n))
-
-    chain[:,1,:] = torch.tensor(p[1:,:])
-    chain[:,0,:] = torch.tensor(p[0:-1,:])
-
-    return chain
-
-    
 # a function for turning a chain into a discretized chain
 def discretize_chain(chain,d):
     """ 
