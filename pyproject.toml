@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "cochain_representation_learning"
-description = "Representation learning using cochains"
+name = "neural_k_forms"
+description = "Simplicial Representation Learning with Neural $k$-forms"
 version = "0.1.0"
 authors = [
   "Kelly Maggs <kelly.maggs@epf.ch>",
