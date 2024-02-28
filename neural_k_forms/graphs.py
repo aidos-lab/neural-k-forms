@@ -12,14 +12,14 @@ import torch.nn as nn
 import torchmetrics as tm
 import pytorch_lightning as pl
 
-from neural_k_forms import generate_cochain_data_matrix
+from neural_k_forms.baselines import EGNN
+
+from neural_k_forms.chains import generate_integration_matrix
 
 from neural_k_forms.forms import NeuralOneForm
 
 from neural_k_forms.graph_datasets import LargeGraphDataset
 from neural_k_forms.graph_datasets import SmallGraphDataset
-
-from neural_k_forms.baselines import EGNN
 
 from torch_geometric.nn.models import GAT
 from torch_geometric.nn.models import GCN
@@ -79,7 +79,7 @@ class ChainModel(nn.Module):
         for i in range(batch_size):
             chains = x[edge_slices[i]:edge_slices[i + 1], :]  # fmt: skip
 
-            X = generate_cochain_data_matrix(self.one_form, chains)
+            X = generate_integration_matrix(self.one_form, chains)
 
             if self.attention is not None:
                 X, _ = self.attention(X, X, X, need_weights=False)
@@ -323,7 +323,7 @@ if __name__ == "__main__":
     wandb_logger = pl.loggers.WandbLogger(
         name=args.name,
         entity="aidos-labs",
-        project="cochain-representation-learning",
+        project="neural-k-forms",
         log_model=False,
         tags=tags,
     )
