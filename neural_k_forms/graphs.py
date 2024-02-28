@@ -1,4 +1,4 @@
-"""Cochain learning on graph data sets.
+"""Neural k-form learning on graph data sets.
 
 This is the main script for cochain representation learning on graphs.
 It is compatible with the `TUDataset` class from `pytorch-geometric`.
@@ -12,12 +12,14 @@ import torch.nn as nn
 import torchmetrics as tm
 import pytorch_lightning as pl
 
-from cochain_representation_learning import generate_cochain_data_matrix
+from neural_k_forms import generate_cochain_data_matrix
 
-from cochain_representation_learning.graph_datasets import LargeGraphDataset
-from cochain_representation_learning.graph_datasets import SmallGraphDataset
+from neural_k_forms.forms import NeuralOneForm
 
-from cochain_representation_learning.geometry import EGNN
+from neural_k_forms.graph_datasets import LargeGraphDataset
+from neural_k_forms.graph_datasets import SmallGraphDataset
+
+from neural_k_forms.baselines import EGNN
 
 from torch_geometric.nn.models import GAT
 from torch_geometric.nn.models import GCN
@@ -42,14 +44,9 @@ class ChainModel(nn.Module):
     ):
         super().__init__()
 
-        output_dim = input_dim * num_steps
-
-        self.vector_field = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim // 2),
-            nn.ReLU(),
-            nn.Linear(hidden_dim // 2, output_dim),
+        # TODO: num_steps and num_cochains could be different.
+        self.one_form = NeuralOneForm(
+            input_dim, hidden_dim, num_cochains=num_steps
         )
 
         self.attention = (
@@ -70,9 +67,6 @@ class ChainModel(nn.Module):
         # `batch` is the input batch (following `pytorch-geometric`
         # conventions), containing multiple graphs. We deconstruct
         # this into different inputs (chain sets).
-        #
-        # TODO (BR): extend documentation :-)
-        #
         x = batch["chains"]
 
         edge_slices = batch._slice_dict["edge_index"]
@@ -85,17 +79,13 @@ class ChainModel(nn.Module):
         for i in range(batch_size):
             chains = x[edge_slices[i]:edge_slices[i + 1], :]  # fmt: skip
 
-            X = generate_cochain_data_matrix(self.vector_field, chains)
+            X = generate_cochain_data_matrix(self.one_form, chains)
 
             if self.attention is not None:
                 X, _ = self.attention(X, X, X, need_weights=False)
 
-            # orientation invariant square L2-norm readout function
-            # TODO (BR): this is something we might want to change, no? If
-            # I understand the code correctly, we are getting information
-            # for all edges. I wonder whether it would make sense to think
-            # about some other readout functions here (potentially using
-            # attention weights).
+            # This corresponds to the orientation-invariant square
+            # $L^2$ norm readout function.
             X = torch.diag(X.T @ X)
 
             all_features.append(X)
@@ -144,8 +134,8 @@ class BaselineModel(nn.Module):
         self.name = baseline
 
     def forward(self, data):
-        # TODO: This is not nice but we want to produce some results
-        # quickly...
+        # The other baselines have a slightly different way of handling
+        # data, requiring the node features and edge information.
         if self.name != "EGNN":
             x, edge_index = data.x, data.edge_index
 
