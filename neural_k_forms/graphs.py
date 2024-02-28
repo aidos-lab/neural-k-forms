@@ -331,7 +331,7 @@ if __name__ == "__main__":
     # Store the configuration in the logger so that we can make
     # everything searchable later on.
     config = {
-        "model": args.baseline if args.baseline is not None else "DRACO",
+        "model": args.baseline if args.baseline is not None else "NkF",
         "num_steps": args.num_steps,
         "max_epochs": args.max_epochs,
         "fold": args.fold,
