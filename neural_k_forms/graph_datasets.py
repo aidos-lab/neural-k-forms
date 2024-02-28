@@ -11,7 +11,7 @@ import pytorch_lightning as pl
 
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
-from cochain_representation_learning import DATA_ROOT
+from neural_k_forms import DATA_ROOT
 
 from torch_geometric.data import DataLoader
 

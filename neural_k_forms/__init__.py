@@ -2,8 +2,6 @@
 
 import os.path
 
-from .chains import generate_cochain_data_matrix
-
 # Root directory for data sets. `pytorch-geometric` has the capability
 # to automatically save them in a cache dir. This construction ensures
 # that all data sets are placed in a data folder in the repo root dir.
