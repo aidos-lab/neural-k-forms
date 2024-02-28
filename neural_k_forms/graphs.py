@@ -17,6 +17,8 @@ from cochain_representation_learning import generate_cochain_data_matrix
 from cochain_representation_learning.graph_datasets import LargeGraphDataset
 from cochain_representation_learning.graph_datasets import SmallGraphDataset
 
+from cochain_representation_learning.geometry import EGNN
+
 from torch_geometric.nn.models import GAT
 from torch_geometric.nn.models import GCN
 from torch_geometric.nn.models import GIN
@@ -117,6 +119,7 @@ class BaselineModel(nn.Module):
     """
 
     name_to_class = {
+        "EGNN": EGNN,
         "GAT": GAT,
         "GIN": GIN,
         "GCN": GCN,
@@ -138,11 +141,18 @@ class BaselineModel(nn.Module):
             out_channels=num_classes,
         )
 
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
+        self.name = baseline
 
-        x = self.model(x, edge_index)
-        x = global_add_pool(x, data.batch, size=len(data))
+    def forward(self, data):
+        # TODO: This is not nice but we want to produce some results
+        # quickly...
+        if self.name != "EGNN":
+            x, edge_index = data.x, data.edge_index
+
+            x = self.model(x, edge_index)
+            x = global_add_pool(x, data.batch, size=len(data))
+        else:
+            x = self.model(data)
 
         return nn.functional.log_softmax(x, dim=-1)
 
@@ -290,7 +300,7 @@ if __name__ == "__main__":
         "-B",
         "--baseline",
         type=str,
-        choices=["GAT", "GCN", "GIN"],
+        choices=["EGNN", "GAT", "GCN", "GIN"],
         default=None,
     )
     parser.add_argument("-S", "--num-steps", type=int, default=5)
