@@ -1,12 +1,16 @@
 """EGNN implementation.
 
-Source: https://github.com/senya-ashukha/simple-equivariant-gnn/tree/main
+This code was originally authored by Arsenii Senya Ashukha and was taken
+from his GitHub repository.
+
+- Author: https://github.com/senya-ashukha
+- Source: https://github.com/senya-ashukha/simple-equivariant-gnn/tree/main
+- Originally released under an Apache License 2.0
 """
 
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 def index_sum(agg_size, source, idx, cuda):
