@@ -38,15 +38,15 @@ class ChainModel(nn.Module):
         input_dim,
         num_classes,
         num_steps=5,
+        num_cochains=5,
         hidden_dim=32,
         use_batch_norm=True,
         use_attention=False,
     ):
         super().__init__()
 
-        # TODO: num_steps and num_cochains could be different.
         self.one_form = NeuralOneForm(
-            input_dim, hidden_dim, num_cochains=num_steps
+            input_dim, hidden_dim, num_cochains=num_cochains,
         )
 
         self.attention = (
@@ -269,9 +269,8 @@ class ModelWrapper(pl.LightningModule):
         optimizer = torch.optim.Adam(self.backbone.parameters(), lr=1e-3)
 
         # Add a scheduler that halves the learning rate as soon as the
-        # validation loss starts plateauing.
-        #
-        # TODO (BR): Make some of these parameters configurable.
+        # validation loss starts plateauing. This is available to each
+        # model so it does not put as at an unfair advantage.
         scheduler = {
             "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
                 optimizer, mode="min", factor=0.1, patience=10
