@@ -26,3 +26,17 @@ $ pip install torch_geometric
 $ pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.0.0+cpu.html
 $ pip install torchmetrics pytorch-lightning
 ```
+
+# Experiments
+
+## Graphs
+
+We have integrated our neural $k$-forms into a simple architecture for
+graph classification. To run these  experiments, reproducing **Table 1** and
+**Table 2** from the main paper, run the `graphs.py` script or module
+with an appropriate name:
+
+```
+$ python -m neural_k_forms.graphs --name BZR                # To run our model
+$ python -m neural_k_forms.graphs --name BZR --baseline GCN # To run a baseline
+```
