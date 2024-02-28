@@ -2,5 +2,9 @@
 *.pt
 *.swp
 
+.ipynb_checkpoints/
+
 data/
+wandb/
+
 __pycache__/
