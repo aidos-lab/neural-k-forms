@@ -17,6 +17,7 @@ matplotlib = "^3.7.1"
 wandb = "^0.15.3"
 pandas = "^2.0.3"
 tqdm = "^4.66.1"
+ripser = "^0.6.7"
 
 [tool.poetry.group.dev.dependencies]
 notebook = "^6.5.4"
@@ -33,3 +34,4 @@ pyg-cpu        = """
   pip install torch_geometric
   pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.2.0+cpu.html
 """
+lightning      = "python -m pip install lightning"
