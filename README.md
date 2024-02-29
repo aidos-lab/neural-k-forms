@@ -1,4 +1,4 @@
-# Simplicial Representation Learning with Neural k-forms 
+# Simplicial Representation Learning with Neural $k$-Forms 
 
 Kelly Maggs, Celia Hacker, and Bastian Rieck
 
@@ -27,11 +27,17 @@ $ pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv
 $ pip install torchmetrics pytorch-lightning
 ```
 
-# Experiments
+# Experiments and Tutorials
 
-## Graphs
+Please check out several guided tutorial notebooks in the
+[`notebooks`](/notebooks/) folder. The following notebooks
+are available:
 
-We have integrated our neural $k$-forms into a simple architecture for
+- [Synthetic path classification experiments](/notebooks/synthetic-path-classification.ipynb)
+- [Synthetic surface classification](/notebooks/synthetic-surface-classification.ipynb)
+- [Visualising eigenvectors of the simplicial $1$-Laplacian operator](/notebooks/visualising-eigenvectors.ipynb)
+
+We have also integrated our neural $k$-forms into a simple architecture for
 graph classification. To run these  experiments, reproducing **Table 1** and
 **Table 2** from the main paper, run the `graphs.py` script or module
 with an appropriate name:
@@ -40,3 +46,8 @@ with an appropriate name:
 $ python -m neural_k_forms.graphs --name BZR                # To run our model
 $ python -m neural_k_forms.graphs --name BZR --baseline GCN # To run a baseline
 ```
+
+# Architecture
+
+TODO: Provide a brief view of the architecture and how to use it or
+extend it.
