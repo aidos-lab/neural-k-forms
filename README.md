@@ -33,9 +33,9 @@ Please check out several guided tutorial notebooks in the
 [`notebooks`](./notebooks/) folder. The following notebooks
 are available:
 
-- [Synthetic path classification experiments](./notebooks/synthetic-path-classification.ipynb)
-- [Synthetic surface classification](./notebooks/synthetic-surface-classification.ipynb)
-- [Visualising eigenvectors of the simplicial $1$-Laplacian operator](./notebooks/visualising-eigenvectors.ipynb)
+- [Synthetic path classification experiments](notebooks/synthetic-path-classification.ipynb)
+- [Synthetic surface classification](notebooks/synthetic-surface-classification.ipynb)
+- [Visualising eigenvectors of the simplicial $1$-Laplacian operator](notebooks/visualising-eigenvectors.ipynb)
 
 We have also integrated our neural $k$-forms into a simple architecture for
 graph classification. To run these  experiments, reproducing **Table 1** and
