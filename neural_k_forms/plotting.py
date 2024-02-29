@@ -1,8 +1,37 @@
 """Plotting routines for cochains."""
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 import torch
+
+
+def plot_surface(X, Y, Z, title=None):
+    """
+    Plot a surface in 3D.
+
+    Parameters
+    ----------
+    X : array
+        Array containing the x-coordinates of the points.
+    Y : array
+        Array containing the y-coordinates of the points.
+    Z : array
+        Array containing the z-coordinates of the points.
+    title : str, optional
+        Title of the plot. The default is None.
+
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(projection="3d")
+    ax.plot_surface(X, Y, Z, cmap="viridis", edgecolor="none")
+    ax.view_init(40, 60)
+
+    if title is not None:
+        ax.set_title(title)
+
+    plt.show()
+    return None
 
 
 def plot_component_vector_field(f, ax, comp=0, x_range=5, y_range=5):
