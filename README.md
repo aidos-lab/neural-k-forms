@@ -25,7 +25,7 @@ information from geometrical graphs with node features serving as
 coordinates.
 
 <p align="center">
-   <img src="./figures/pipeline.png">
+   <img src="figures/pipeline.png" />
 </p>
 
 Please use the following citation for our work:
