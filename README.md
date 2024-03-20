@@ -28,6 +28,20 @@ coordinates.
    <img src="./figures/pipeline.png">
 </p>
 
+## Citation
+
+Please use the following citation for our work:
+
+```bibtex
+@inproceedings{Maggs24a,
+  title         = {Simplicial Representation Learning with Neural $k$-forms},
+  author        = {Kelly Maggs and Celia Hacker and Bastian Rieck},
+  year          = 2024,
+  booktitle     = {International Conference on Learning Representations},
+  url           = {https://openreview.net/forum?id=Djw0XhjHZb},
+}
+```
+
 ## Installation with `pip` or `poetry`
 
 With `poetry install` or `pip install .`, the base packages will be set up.
