@@ -28,8 +28,6 @@ coordinates.
    <img src="./figures/pipeline.png">
 </p>
 
-## Citation
-
 Please use the following citation for our work:
 
 ```bibtex
